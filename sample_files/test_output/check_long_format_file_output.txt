@@ -1,0 +1,2 @@
+Checking file 50kv3_Long_14June2019.txt
+File 50kv3_Long_14June2019.txt may have incorrect genotype data

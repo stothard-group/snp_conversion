@@ -1,0 +1,11 @@
+Checking file 50kv3_Long_14June2019.txt
+File 50kv3_Long_14June2019.txt may have incorrect genotype data
+Checking file 50kv3_Long_14June2019.FORWARD.txt
+File 50kv3_Long_14June2019.FORWARD.txt is correctly formatted
+File 50kv3_Long_14June2019.txt was converted properly
+Checking file 50kv3_mTOP_14June2019.txt
+File 50kv3_mTOP_14June2019.txt is in TOP format
+['Sample1', 'Sample2', 'Sample3', 'Sample4', 'Sample5', 'Sample6', 'Sample7', 'Sample8', 'Sample9', 'Sample10']
+Checking file 50kv3_mTOP_14June2019.FORWARD.txt
+File 50kv3_mTOP_14June2019.FORWARD.txt is correctly formatted
+File 50kv3_mTOP_14June2019.txt was converted properly

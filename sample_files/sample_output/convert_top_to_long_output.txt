@@ -1,0 +1,8 @@
+Testing user input file
+Checking file 50kv3_mTOP_14June2019.txt
+File 50kv3_mTOP_14June2019.txt is correctly formatted
+Conversion time for file 50kv3_mTOP_14June2019.txt: 14s
+Testing converted file
+Checking file 50kv3_mTOP_14June2019.output.txt
+File 50kv3_mTOP_14June2019.output.txt is correctly formatted
+File 50kv3_mTOP_14June2019.txt was converted properly

@@ -1,0 +1,8 @@
+Testing user input file
+Checking file G_CCGP_Axiom_sample.txt
+File G_CCGP_Axiom_sample.txt is correctly formatted
+Conversion time for file G_CCGP_Axiom_sample.txt: 323s
+Testing converted file
+Checking file G_CCGP_Axiom_sample.affy_plus.txt
+File G_CCGP_Axiom_sample.affy_plus.txt is correctly formatted
+File G_CCGP_Axiom_sample.txt was converted properly

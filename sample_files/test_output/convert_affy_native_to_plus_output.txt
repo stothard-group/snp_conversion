@@ -1,0 +1,6 @@
+Checking file G_CCGP_Axiom_sample.txt
+File G_CCGP_Axiom_sample.txt is correctly formatted
+['Sample1.1', 'Sample2.1', 'Sample3.1', 'Sample4.1', 'Sample5.1', 'Sample6.1', 'Sample7.1', 'Sample8.1', 'Sample9.1', 'Sample10.1']
+Checking file G_CCGP_Axiom_sample.affy_plus.txt
+File G_CCGP_Axiom_sample.affy_plus.txt is correctly formatted
+File G_CCGP_Axiom_sample.txt was converted properly
