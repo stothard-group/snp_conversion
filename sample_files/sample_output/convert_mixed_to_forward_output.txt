@@ -1,0 +1,10 @@
+Checking file 50kv3_Long_14June2019.txt
+File 50kv3_Long_14June2019.txt is in long format
+Checking file 50kv3_Long_14June2019.FORWARD.txt
+File 50kv3_Long_14June2019.FORWARD.txt is correctly formatted
+File 50kv3_Long_14June2019.txt was converted properly
+Checking file 50kv3_mTOP_14June2019.txt
+File 50kv3_mTOP_14June2019.txt is in TOP format
+Checking file 50kv3_mTOP_14June2019.FORWARD.txt
+File 50kv3_mTOP_14June2019.FORWARD.txt is correctly formatted
+File 50kv3_mTOP_14June2019.txt was converted properly

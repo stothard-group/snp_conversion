@@ -1,0 +1,5 @@
+Checking file G_CCGP_Axiom_sample.txt
+File G_CCGP_Axiom_sample.txt is correctly formatted
+Checking file G_CCGP_Axiom_sample.affy_plus.txt
+File G_CCGP_Axiom_sample.affy_plus.txt is correctly formatted
+File G_CCGP_Axiom_sample.txt was converted properly

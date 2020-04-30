@@ -1,0 +1,78 @@
+## Installation Instructions
+
+===================
+System Requirements
+===================
+
+SNP Conversion and Genotype Concordance have been developed and tested with
+Python version 3.6.3. They are not compatible with Python2. Python 3 must be
+installed to use these programs.
+
+============
+Installation
+============
+
+**NOTE:** If you are installing on a Windows system, you will need to have
+installed [Microsoft Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+before installing dependencies with pip. You may also need to upgrade your pip
+install setuptools with `pip install -U setuptools`
+
+There are no special installation instructions for SNP Conversion and Genotype
+Concordance programs. All required dependencies can be installed using the [pip
+package installer for python](https://pypi.org/project/pip/).
+
+Download the program from Github or clone it into your directory. To download
+all dependencies, install the SNP Conversion wheel with
+
+`pip3 install dist/SNP_Conversion-1.0-py3-none-any.whl`
+
+Use the `--user` flag for a local install.
+
+
+If you already have all the required dependencies listed below, you can simply
+run SNP Conversion or Genome Concordance with
+
+`python SNP_conversion.py` or `python genotype_concordance.py`
+
+
+
+==================
+Required Libraries
+==================
+
+SNP Conversion and Genotype Concordance require the following non-standard
+libraries:
+
+ - pandas
+ - numpy
+ - toolz
+
+Genotype Concordance requires the following additional non-standard libraries:
+
+ - scikit-allel
+
+Non-standard libraries can be installed with pip3:
+
+`pip3 install [library]`
+
+Or conda:
+
+`conda install -c conda-forge [library]`
+
+
+The following standard libraries are required by both programs:
+
+ - os
+ - atexit
+ - warnings
+ - argparse
+ - sys
+ - time
+ - functools
+ - platform
+ - concurrent.futures
+ - zipfile
+ - gzip
+ - bz2
+ - io
+ - collections

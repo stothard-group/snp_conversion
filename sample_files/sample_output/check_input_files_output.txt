@@ -1,0 +1,25 @@
+Checking file 50kv3_Long_14June2019.txt
+SNPs from file 50kv3_Long_14June2019.txt are found in variant file BovineSNP50_v3_A1.UMD3_1_chromosomes.conversion.csv
+File 50kv3_Long_14June2019.txt is in long format
+Checking file 50kv3_mAB_14June2019.txt
+File 50kv3_mAB_14June2019.txt is in AB format
+SNPs from file 50kv3_mAB_14June2019.txt are found in variant file BovineSNP50_v3_A1.UMD3_1_chromosomes.conversion.csv
+Checking file 50kv3_mFWD_14June2019.txt
+File 50kv3_mFWD_14June2019.txt is in FWD format
+SNPs from file 50kv3_mFWD_14June2019.txt are found in variant file BovineSNP50_v3_A1.UMD3_1_chromosomes.conversion.csv
+Checking file 50kv3_mFWD_part1.txt
+File 50kv3_mFWD_part1.txt is in FWD format
+SNPs from file 50kv3_mFWD_part1.txt are found in variant file BovineSNP50_v3_A1.UMD3_1_chromosomes.conversion.csv
+Checking file 50kv3_mFWD_part2.txt
+File 50kv3_mFWD_part2.txt is in FWD format
+SNPs from file 50kv3_mFWD_part2.txt are found in variant file BovineSNP50_v3_A1.UMD3_1_chromosomes.conversion.csv
+Checking file 50kv3_mTOP_14June2019.txt
+File 50kv3_mTOP_14June2019.txt is in TOP format
+SNPs from file 50kv3_mTOP_14June2019.txt are found in variant file BovineSNP50_v3_A1.UMD3_1_chromosomes.conversion.csv
+Checking file 50kv3_mTOP_inconsistent.txt
+File 50kv3_mTOP_inconsistent.txt may be in TOP format with 1 inconsistent SNP(s)
+SNPs from file 50kv3_mTOP_inconsistent.txt are found in variant file BovineSNP50_v3_A1.UMD3_1_chromosomes.conversion.csv
+Checking file G_CCGP_Axiom_sample.txt
+File G_CCGP_Axiom_sample.txt is correctly formatted
+File G_CCGP_Axiom_sample.txt is in Affymetrix format
+SNPs from file G_CCGP_Axiom_sample.txt are found in variant file Axiom_GW_Bos_SNP_1_na34_annot.UMD3_1_chromosomes.conversion.csv
