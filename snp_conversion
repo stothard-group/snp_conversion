@@ -1,10 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import argparse
 import sys
 import os
-import file_format_checker as ffc
-import file_conversion as convert
-import merge_snp_files as merge
+import lib.file_format_checker as ffc
+import lib.file_conversion as convert
+import lib.merge_snp_files as merge
 
 # Get cwd for --input-dir
 cwd = os.getcwd()
