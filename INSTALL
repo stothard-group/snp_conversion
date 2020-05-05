@@ -24,7 +24,7 @@ package installer for python](https://pypi.org/project/pip/).
 Download the program from Github or clone it into your directory. To download
 all dependencies, install the SNP Conversion wheel with
 
-`pip3 install dist/SNP_Conversion-1.0-py3-none-any.whl`
+`pip3 install dist/SNP_Conversion-2.0-py3-none-any.whl`
 
 Use the `--user` flag for a local install.
 
