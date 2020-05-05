@@ -13,6 +13,8 @@ import write_summary as summ
 import errors
 from pandas.errors import ParserError
 import plink_output as make_plink
+import time
+import atexit
 
 
 #####################################################################################################################
@@ -22,44 +24,81 @@ minimum_correct_snp_fraction = 0.95
 #####################################################################################################################
 
 
-def snp_panel(var_ls, f):
-    # Get possible SNP panels
-    error_text = []
-    if len(var_ls) == 1:
-        var = var_ls[0]
-        message = "SNPs from file " + f + " are found in variant file " + var
-        print(message)
-        error_text.append(message)
-    elif len(var_ls) > 1:
-        var_string = ', '.join(var_ls)
-        message = "SNPs from file " + f + " are found in variant files " + var_string + \
-                  "\n" + var_ls[0] + " was used for analysis"
-        print(message)
-        error_text.append(message)
+def get_snp_files(file_list, input_dir, logfile):
+    """
+    Gets user input files and removes ones that do not end in .txt
+    :param file_list: user list of input files (may be None)
+    :param input_dir: directory containing input files
+    :param logfile: logfile name (may be None)
+    :return: list of snp files
+    """
+    if file_list is None:
+        snp_files_array = os.listdir(input_dir)
     else:
-        # Program should quit before seeing this message
-        message = "No conversion file contains all input SNPs"
-        print(message)
-        error_text.append(message)
-    return error_text
-
-
-def affy_head_check(header):
-    simple_list = []
-    header_correct = None
-    for sample in header:
-        if not sample.endswith('.1'):
-            simple_list.append(sample)
-    for simple in simple_list:
-        new_simple = simple + ".1"
-        if new_simple in header:
-            header_correct = True
+        # get all files in directory using file list
+        snp_files = file_list
+        snp_files_array = snp_files.split(',')
+        # check that these files actually exist in the input directory
+        input_not_exists = errors.input_file_name_error(input_dir, snp_files_array)
+        if input_not_exists:
+            exit("File(s) " + ", ".join(input_not_exists) + " are not found in " + input_dir)
         else:
-            header_correct = False
-    return header_correct
+            pass
+    # Check that these are all .txt files and exclude any non-txt files
+    non_txt_files = errors.non_txt_fmt_input_files(snp_files_array)
+    if non_txt_files:
+        message = "The following files are not .txt files are are excluded from analysis: " + ', '.join(non_txt_files)
+        warnings.warn(message, stacklevel=4)
+        for non_txt in non_txt_files:
+            snp_files_array.remove(non_txt)
+    else:
+        pass
+    # check that there are files left in snp_files_array
+    if snp_files_array:
+        pass
+    else:
+        exit("No matrix files in " + input_dir)
+    return snp_files_array, logfile
+
+
+def get_variant_files(conversion_dir, assembly, species):
+    """
+    Gets a list of possible variant files using assembly and species information
+    :param conversion_dir: variant position files directory
+    :param assembly: assembly name
+    :param species: species name
+    :return: list of variant files
+    """
+
+    # Get variant position files
+    variant_species_dir = os.path.join(conversion_dir, species)
+    variant_assembly_dir = os.path.join(variant_species_dir, assembly)
+    variant_files = os.listdir(variant_assembly_dir)
+    # Check that the assembly and species combination works
+    species_error = errors.assembly_species_error(conversion_dir, assembly, species)
+    if not species_error:
+        exit("Cannot find assembly name in any variant file in " + conversion_dir)
+    # Exclude any files without .csv ending (but with correct assembly)
+    variant_exclude = errors.non_csv_fmt_conversion_files(conversion_dir, assembly, species)
+    if variant_exclude:
+        for wrong_var in variant_exclude:
+            variant_files.remove(wrong_var)
+        if not variant_files:
+            exit("No variant conversion files in " + variant_assembly_dir)
+    else:
+        pass
+    return variant_files
 
 
 def affy_test(file_path, file, file_type, affy_flag):
+    """
+    Determines whether the input file might be affymetrix format, especially important if input format is mixed
+    :param file_path: path to input snp file
+    :param file: input file name
+    :param file_type: input file type
+    :param affy_flag: (bool) True if affymetrix file was specified
+    :return: (Bool) whether or not file is affy format
+    """
     with open(file_path) as f:
         line = f.readline()
         line = line.rstrip("\n")
@@ -81,20 +120,202 @@ def affy_test(file_path, file, file_type, affy_flag):
         else:
             pass
         f.close()
-    return(affy_flag)
+    return affy_flag
 
 
-def AB_check(dataframe, file, is_mixed, log):
-    ab_list = ['AA', 'AB', 'BB', '--', 'NoCall']
-    new_df = ~dataframe.iloc[:, 1:].isin(ab_list)
-    result = sum(new_df.sum(axis=1))
-    ab_warn = None
-    if result > 0 and is_mixed is False:
-        ab_warn = make_logs.ab_warning(dataframe, new_df, file, log)
-    return result, ab_warn
+def affy_head_check(header):
+    """
+    Checks the header format to see if affymetrix has AB columns
+    :param header: header line of affymetrix file (first line)
+    :return: (Bool) Whether header has AB format columns as well (True)
+    """
+    simple_list = []
+    header_correct = None
+    for sample in header:
+        if not sample.endswith('.1'):
+            simple_list.append(sample)
+    for simple in simple_list:
+        new_simple = simple + ".1"
+        if new_simple in header:
+            header_correct = True
+        else:
+            header_correct = False
+    return header_correct
+
+
+def parse_affy_file(file_path, file, logfile):
+    """
+    Parses affymetrix file input
+    :param file_path: path to input file
+    :param file: input file name
+    :param logfile: logfile
+    :return: affymetrix dict, affy_dataframe, logfile
+    """
+    timestr = time.strftime("%H:%M:%S")
+    logfile_text = timestr + " ..... Reading in affymetrix input file"
+    log_array = [logfile_text]
+    # Test affy forward values here
+    affy_df = pd.read_csv(file_path, sep='\t', mangle_dupe_cols=True)
+    # make dataframe look like the illumina one (remove AB columns)
+    header_row = list(set(affy_df.columns))
+    header_row.remove('probeset_id')
+    # quick check to make sure header row is really affy format (2 columns for every sample)
+    head_check = affy_head_check(header_row)
+    if head_check is False:
+        message = "Affymetrix file may not have AB columns"
+        warnings.warn(message, stacklevel=4)
+        if logfile is not None:
+            log_array.append(message)
+            logging = make_logs.simple_log(log_array, file, logfile)
+    else:
+        pass
+    affy_header_dict = {}
+    for value in header_row:
+        new_affy_df = affy_df[['probeset_id', value]].copy()
+        ab_list = ['AA', 'AB', 'BB', 'NoCall']
+        test_ab_df = ~new_affy_df.iloc[:, 1:].isin(ab_list)
+        not_ab = sum(test_ab_df.sum(axis=1))
+        affy_header_dict.update({value: not_ab})
+    copy_affy_df = affy_df.copy()  # keep a copy just in case
+    for keys in affy_header_dict:
+        if affy_header_dict[keys] == 0:
+            affy_df.drop(columns=keys, inplace=True)
+    affy_df.rename(columns={'probeset_id': 'Name'}, inplace=True)
+    if logfile is not None:
+        logging = make_logs.simple_log(log_array, file, logfile)
+    return affy_header_dict, affy_df, logfile
+
+
+def read_illumina_input(file_path, header_row, file, logfile):
+    """
+    Reads the Illumina file into a dataframe
+    :param file_path: path to input file
+    :param header_row: rows to skip for header info
+    :param file: file name for logging
+    :param logfile: logfile
+    :return: Illumina dataframe, (bool) whether file is a long file, logfile
+    """
+    timestr = time.strftime("%H:%M:%S")
+    logfile_text = timestr + " ..... Reading in Illumina input file"
+    log_array = [logfile_text]
+    with open(file_path, 'r') as input_file:
+        # Make sure input file will not throw a dataframe error (from an incorrect header structure)
+        try:
+            df = pd.read_csv(input_file, skiprows=header_row, sep="\t")
+        except ParserError:
+            message = "First line might not contain column names - check formatting"
+            log_array.append(message)
+            atexit.register(make_logs.simple_log, log_array, file, logfile)
+            sys.exit()
+        long_ft = False
+        df_columns_long_check = list(df.columns)
+        for type_of_file in df_columns_long_check:
+            if 'Allele1' in type_of_file:
+                long_ft = True
+        if long_ft is False:
+            # Put in a check here to make sure there are the same number of column labels as columns
+            if 'Unnamed: 0' not in df.columns:
+                df.index.names = ['Unnamed: 0']
+                df.reset_index(inplace=True)
+            df.rename(columns={'Unnamed: 0': 'Name'}, inplace=True)
+    input_file.close()
+    if logfile is not None:
+        logging = make_logs.simple_log(log_array, file, logfile)
+    return df, long_ft, logfile
+
+
+def get_long_df_dict(long_df, header_row, header_dict, numbers_exist, file, logfile):
+    """
+    Creates a dict containing all dataframes (sample, pos1, pos2) where keys are data types in long file
+    :param long_df: dataframe of Long Illumina data
+    :param header_row: number of rows to skip in input file
+    :param header_dict: dict containing header information
+    :param numbers_exist: num_snps and num_samples exist
+    :param file: input file name
+    :param logfile: logfile
+    :return: dict containing all dataframes in long file
+    """
+    timestr = time.strftime("%H:%M:%S")
+    logfile_text = timestr + " ..... Parsing Long file"
+    log_array = [logfile_text]
+    # make sure header info accurately reflects file
+    if header_row != 0 and numbers_exist:
+        samples_list = list(set(long_df['Sample ID']))
+        num_samples = len(samples_list)
+        num_snps = len(long_df['SNP Name'].unique())
+        header_congruency = fp.check_header_data_congruency(header_dict, num_samples, num_snps)
+        if header_congruency:
+            append_text = "File " + file
+            log_array.append(append_text)
+        for each_warning in header_congruency:
+            log_array.append(each_warning)
+    else:
+        pass
+    # do stuff here to get the long file into arrays
+    type_list = ['TOP', 'FWD', 'AB', 'DESIGN', 'PLUS']
+    df_dict = {}
+    for ty in type_list:
+        out1, out2 = fc.gen_long_output_col_names(ty)
+        # Make sure allele type exists
+        if out1 not in long_df.columns or out2 not in long_df.columns:
+            message = "Columns " + out1 + " and " + out2 + " might not be in the input file"
+            warnings.warn(message, stacklevel=4)
+        else:
+            sub_long_df = long_df[['SNP Name', 'Sample ID', out1, out2]]
+            # print new df by sample and save to dict by "file type"
+            sample_list = sub_long_df['Sample ID']
+            unique_samples = list(set(sample_list))
+            pos1 = sub_long_df.columns.values[2]
+            pos2 = sub_long_df.columns.values[3]
+            output_df = sub_long_df[['SNP Name']].copy()
+            output_df = output_df.rename(columns={'SNP Name': 'Name'})
+            for sample in unique_samples:
+                sub_sample_df = pd.DataFrame()
+                sub_sample_df[sample] = sub_long_df[[pos1, pos2]].apply(lambda x: ''.join(x), axis=1)
+                output_df[sample] = sub_sample_df[sample].apply(lambda v: v)
+                df_dict.update({ty: output_df})
+    if logfile is not None:
+        logging = make_logs.simple_log(log_array, file, logfile)
+    return df_dict, logfile
+
+
+def check_illumina_df_header(illumina_df, header_row, header_dict, numbers_exist, file, logfile):
+    """
+    Checks Illumina dataframe header
+    :param illumina_df: dataframe of matrix Illumina data
+    :param header_row: number of rows to skip in input file
+    :param header_dict: dict containing header information
+    :param numbers_exist: num_snps and num_samples exist
+    :param file: input file name
+    :param logfile: logfile
+    """
+    log_array = []
+    if header_row != 0 and numbers_exist:
+        num_samples = len(illumina_df.columns) - 1
+        num_snps = len(illumina_df.index)
+        header_congruency = fp.check_header_data_congruency(header_dict, num_samples, num_snps)
+        if header_congruency:
+            append_text = "File " + file
+            log_array.append(append_text)
+        for each_warning in header_congruency:
+            log_array.append(each_warning)
+    if logfile is not None:
+        logging = make_logs.simple_log(log_array, file, logfile)
+    illumina_df_checked = True
+    return illumina_df_checked, logfile
 
 
 def TFDP_format_check(dataframe, var_dataframe, fmt, in_file, is_mixed, log):
+    """
+    Beefy format checking module. This does all the work, comparing input dataframe to variant dataframe
+    :param dataframe: dataframe from input file
+    :param var_dataframe: variant dataframe
+    :param fmt: dataframe format (one of FWD, PLUS, TOP, DESIGN)
+    :param in_file: input file name
+    :param is_mixed: (Bool) whether the input type was set by the user to "mixed" or unspecified
+    :param log: logfile
+    :return: (int) a count of the non-matching positions, logfile
+    """
     # The A/B that are variable should be equal to TOP_A and TOP_B, respectively, if file_format is TOP
     # The A/B that are variable should be equal to FORWARD_A and FORWARD_B, respectively, if file_format is FWD
     # Create dataframe with ID, TOP_A, and TOP_B
@@ -213,7 +434,77 @@ def TFDP_format_check(dataframe, var_dataframe, fmt, in_file, is_mixed, log):
     return all_non_matches, log_exists
 
 
+def check_affy_format(affy_df, var_df, specified_file_type, file, file_type, summary_inconsistency_value, logfile):
+    """
+    Check format of an affymetrix dataframe using TFDR
+    :param affy_df: affymetrix input dataframe
+    :param var_df: variant dataframe
+    :param specified_file_type: file type specified by user
+    :param file: file name for logging
+    :param file_type: same as specified file type, unless AFFY-PLUS in which case this is PLUS
+    :param summary_inconsistency_value: number of inconsistencies in dataframe
+    :param logfile: logfile
+    :return: determined filetype, (bool) whether file is correctly formatted, number of inconsistencies, logfile
+    """
+    timestr = time.strftime("%H:%M:%S")
+    logfile_text = timestr + " ..... Checking Affymetrix file"
+    log_array = [logfile_text]
+    if file_type == 'mixed':
+        is_mixed = True
+    else:
+        is_mixed = False
+    if specified_file_type == 'AFFY-PLUS':
+        affy_fmt = 'PLUS'
+    elif specified_file_type == 'affymetrix':
+        affy_fmt = 'FWD'
+    else:
+        affy_fmt = 'FWD'  # most likely mixed format (not from the check post-file-conversion)
+    format_check, logfile_name = TFDP_format_check(affy_df, var_df, affy_fmt, file, is_mixed, logfile)
+    summary_inconsistency_value = format_check
+    if format_check > 0:
+        if is_mixed is False:
+            out_string = "Affymetrix file is incorrectly formatted - see log for details."
+        else:
+            out_string = "Affymetrix file is incorrectly formatted - re-run with --input-format affymetrix for details"
+        warnings.warn(out_string, stacklevel=4)
+        filetype = None
+        correct_format = False
+    else:  # format check is correct
+        out_string = "File " + file + " is correctly formatted in Affymetrix format"
+        print(out_string)
+        log_array.append(out_string)
+        filetype = 'affymetrix'
+        correct_format = True
+    if logfile is not None:
+        logging = make_logs.simple_log(log_array, file, logfile)
+    return filetype, correct_format, summary_inconsistency_value, logfile
+
+
+def AB_check(dataframe, file, is_mixed, log):
+    """
+    Checks AB format matrix dataframes
+    :param dataframe: dataframe containing AB data
+    :param file: input file name
+    :param is_mixed: (bool) treat this dataframe as if type is unknown
+    :param log: logfile
+    :return: inconsistencies count, logfile (ab_warn)
+    """
+    ab_list = ['AA', 'AB', 'BB', '--', 'NoCall']
+    new_df = ~dataframe.iloc[:, 1:].isin(ab_list)
+    format_check = sum(new_df.sum(axis=1))
+    ab_warn = None
+    if format_check > 0 and is_mixed is False:
+        ab_warn = make_logs.ab_warning(dataframe, new_df, file, log)
+    return format_check, ab_warn
+
+
 def long_format_consistency_check(long_df, variant_df):
+    """
+    Checks for inequivalency in Long file.
+    :param long_df: dataframe containing all long data (not the df dict)
+    :param variant_df: variant dataframe
+    :return: count of consistent values, count of inconsistent values, dict containing the inequivalent lines for logging
+    """
     # Consistency check: pick first 2 columns, figure out if they are AA/BB/AB, make sure that the other ones match this
     long_df.set_index("SNP Name", inplace=True)
     # reorder dataframe
@@ -300,12 +591,6 @@ def long_format_consistency_check(long_df, variant_df):
                 var_row_b_val = var_row['{}_{}'.format(col_name_dict[col2], b_val)].values[0]
             sub_var_row.append(var_row_a_val)
             sub_var_row.append(var_row_b_val)
-        #sub_var_row = [var_row['{}_{}'.format(col_name_dict[new_cols[0]], a_val)].values[0], var_row['TOP_{}'.format(b_val)].values[0],
-        #               var_row['FORWARD_{}'.format(a_val)].values[0], var_row['FORWARD_{}'.format(b_val)].values[0],
-        #               a_val, b_val,
-        #               var_row['DESIGN_{}'.format(a_val)].values[0], var_row['DESIGN_{}'.format(b_val)].values[0],
-        #               var_row['PLUS_{}'.format(a_val)].values[0], var_row['PLUS_{}'.format(b_val)].values[0]]
-
         # If user input row has dashes in any columns, delete the corresponding columns from the variant row
         non_dash_index = []
         for element in range(0, len(row_array)):
@@ -326,591 +611,448 @@ def long_format_consistency_check(long_df, variant_df):
             return_inequiv_dict.update({index: row})
     return consistency_count, inconsistency_count, return_inequiv_dict
 
-    ###################################################################################################################
-    # Get files based on user input
 
-
-def file_format_check(input_d, file_list, specified_file_type, get_snp_panel, verbose_logging, conversion_dir, return_log,
-                      assembly, summarize, tabular, species, make_ped_map):
-    input_dir = input_d
-    if file_list is None:
-        #  get all files in directory (warn and exclude files that are not in .txt format)
-        snp_files_array = os.listdir(input_dir)
-    else:
-        # get all files in directory using file list
-        snp_files = file_list
-        snp_files_array = snp_files.split(',')
-        # check that these files actually exist in the input directory
-        input_not_exists = errors.input_file_name_error(input_d, snp_files_array)
-        if input_not_exists:
-            exit("File(s) " + ", ".join(input_not_exists) + " are not found in " + input_d)
+def check_long_format(long_df_dict, long_df, var_df, file, logfile):
+    """
+    Checks all dataframes within the long format dict, and checks internal consistency of each row
+    :param long_df_dict: dict containing all long data, separated by data type (keys)
+    :param long_df: dataframe containing all long data (not long_df_dict)
+    :param var_df: variant dataframe
+    :param file: file name for logging
+    :param logfile: logfile
+    :return: determined file type, (bool) whether file is correctly formatted, number of inconsistencies, number of long equivalent rows, number of long inequivalent rows, logfile
+    """
+    # Set some variables
+    is_mixed = False
+    correct_format = False
+    correct_count = []
+    total_inconsistencies = 0
+    inequivalent_cols = []
+    timestr = time.strftime("%H:%M:%S")
+    logfile_text = timestr + " ..... Checking Illumina LONG file"
+    log_array = [logfile_text]
+    # Run TFDP check on each dataframe within the long df dict
+    for types in long_df_dict:
+        if types == 'AB':
+            format_check, logfile = AB_check(long_df_dict[types], file, is_mixed, logfile)
+            if format_check > 0:
+                warning = 'Columns for type ' + types + ' have unexpected values'
+                print(warning)
+                log_array.append(warning)
+                correct_count.append(1)
+                inequivalent_cols.append(types)
+                total_inconsistencies = total_inconsistencies + format_check
+            else:
+                correct_count.append(0)
         else:
-            pass
-    # Check that these are all .txt files
-    # check to exclude any non .txt files
-    non_txt_files = errors.non_txt_fmt_input_files(snp_files_array)
-    if non_txt_files:
-        warnings.warn(
-            "The following files are not .txt files are are excluded from analysis: " + ', '.join(non_txt_files),
-            stacklevel=4)
-        for non_txt in non_txt_files:
-            snp_files_array.remove(non_txt)
+            format_check, logfile_name = TFDP_format_check(long_df_dict[types], var_df, types, file, is_mixed, logfile)
+            if format_check > 0:
+                warning = 'Columns for type ' + types + ' have unexpected values'
+                warnings.warn(warning, stacklevel=4)
+                log_array.append(warning)
+                correct_count.append(1)
+                inequivalent_cols.append(types)
+                total_inconsistencies = total_inconsistencies + format_check
+            else:
+                correct_count.append(0)
+    # check internal consistency of each row
+    long_equivalency, long_inequivalency, inequiv_dict = long_format_consistency_check(long_df, var_df)
+    if long_inequivalency != 0:
+        # Write inequivalencies to log file
+        logfile = make_logs.long_inequivalency(file, logfile, inequiv_dict)
+        # Warn inequivalencies
+        warning = "One or more genotypes are inequivalent within a row"
+        warnings.warn(warning, stacklevel=4)
+        log_array.append(warning)
+    if sum(correct_count) == 0:
+        filetype = 'LONG'
+        correct_format = True
+        if long_inequivalency == 0:
+            print("File " + file + " is correctly formatted in Illumina LONG format")
+        elif long_inequivalency != 0:
+            print("File " + file + " may have incorrect genotype data")
+        summary_inconsistency_value = 0
     else:
-        pass
-    # check that there are files left in snp_files_array
-    if snp_files_array:
-        pass
-    else:
-        exit("No matrix files in " + input_d)
+        warning = "Long format file contains errors"
+        print(warning)
+        log_array.append(warning)
+        summary_inconsistency_value = total_inconsistencies
+        filetype = None
+    if logfile is not None:
+        logging = make_logs.simple_log(log_array, file, logfile)
+    return filetype, correct_format, summary_inconsistency_value, long_equivalency, long_inequivalency, logfile
 
-    # Deal with Affy-Plus as an input type
+
+def check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed, header_row, header_dict, logfile):
+    """
+    Puts Illumina matrix df through AB_check and TFDP
+    :param illumina_df: illumina matrix dataframe
+    :param var_df: variant dataframe
+    :param file_type: user-specified input file type; if this is not mixed, the program assumes you know the file type
+    :param file: filename for logging
+    :param is_mixed: (bool) consider the file mixed for logging purposes
+    :param header_row: number of rows to skip for header
+    :param header_dict: dict containing illumina header info
+    :param logfile: logfile
+    :return: determined filetype, (bool) whether file is correctly formatted, number of inconsistencies, logfile
+    """
+    timestr = time.strftime("%H:%M:%S")
+    logfile_text = timestr + " ..... Checking Illumina matrix file"
+    log_array = [logfile_text]
+    format_check_dict = {}
+    filetype_out = None
+    correct_format = False
+    out_string = ''
+    # If we "know" what the file type is to start with
+    if file_type != "mixed":
+        if file_type == "AB":
+            format_check, logfile = AB_check(illumina_df, file, is_mixed,
+                                                 logfile)  # format check should == 0 (no non-AA/AB/BB/-- values in AB file)
+            summary_inconsistency_value = format_check
+            format_check_dict.update({"AB": format_check})
+            if format_check != 0:
+                out_string = "AB file is incorrectly formatted - see log for details"
+            else:
+                out_string = "File " + file + " is correctly formatted"
+                filetype_out = 'AB'
+                correct_format = True
+        elif file_type == "TOP":
+            format_check, logfile_name = TFDP_format_check(illumina_df, var_df, file_type, file, is_mixed, logfile)
+            format_check_dict.update({"TOP": format_check})
+            summary_inconsistency_value = format_check
+            if format_check > 0:
+                out_string = "TOP file is incorrectly formatted - see log for details"
+            else:
+                out_string = "File " + file + " is correctly formatted"
+                filetype_out = 'TOP'
+                correct_format = True
+        elif file_type == 'FWD':
+            format_check, logfile_name = TFDP_format_check(illumina_df, var_df, file_type, file, is_mixed, logfile)
+            summary_inconsistency_value = format_check
+            format_check_dict.update({"FWD": format_check})
+            if format_check > 0:
+                out_string = "FWD file is incorrectly formatted - see log for details"
+            else:
+                out_string = "File " + file + " is correctly formatted"
+                filetype_out = 'FWD'
+                correct_format = True
+        elif file_type == 'DESIGN':
+            format_check, logfile_name = TFDP_format_check(illumina_df, var_df, file_type, file, is_mixed, logfile)
+            summary_inconsistency_value = format_check
+            format_check_dict.update({"DESIGN": format_check})
+            if format_check > 0:
+                out_string = "DESIGN file is incorrectly formatted - see log for details"
+            else:
+                out_string = "File " + file + " is correctly formatted"
+                correct_format = True
+                filetype_out = 'DESIGN'
+        elif file_type == 'PLUS':
+            format_check, logfile_name = TFDP_format_check(illumina_df, var_df, file_type, file, is_mixed, logfile)
+            summary_inconsistency_value = format_check
+            format_check_dict.update({"PLUS": format_check})
+            if format_check > 0:
+                out_string = "PLUS file is incorrectly formatted - see log for details"
+            else:
+                out_string = "File " + file + " is correctly formatted"
+                correct_format = True
+                filetype_out = 'PLUS'
+        else:
+            summary_inconsistency_value = None
+        output_value = format_check_dict[file_type]
+        print(out_string)
+        log_array.append(out_string)
+    # If file type IS mixed, then we have to try to guess
+    else:
+        # Warn if there are too few SNPs to make an assignment
+        if len(illumina_df.index) < 50:
+            out_string = "There may not be enough SNPs to determine matrix format accurately"
+            warnings.warn(out_string, stacklevel=4)
+            log_array.append(out_string)
+        is_mixed = True
+        # Test formats
+        try_AB_format, logfile = AB_check(illumina_df, file, is_mixed, logfile)
+        try_TOP_format, logfile = TFDP_format_check(illumina_df, var_df, "TOP", file, is_mixed, logfile)
+        try_FWD_format, logfile = TFDP_format_check(illumina_df, var_df, "FWD", file, is_mixed, logfile)
+        try_PLUS_format, logfile = TFDP_format_check(illumina_df, var_df, "PLUS", file, is_mixed, logfile)
+        try_DESIGN_format, logfile = TFDP_format_check(illumina_df, var_df, 'DESIGN', file, is_mixed, logfile)
+        if try_AB_format == 0:
+            message = "File " + file + " is in AB format"
+            print(message)
+            log_array.append(message)
+            filetype_out = 'AB'
+            correct_format = True
+            summary_inconsistency_value = try_AB_format
+
+        elif try_TOP_format == 0:
+            message = "File " + file + " is in TOP format"
+            print(message)
+            log_array.append(message)
+            filetype_out = 'TOP'
+            correct_format = True
+            summary_inconsistency_value = try_TOP_format
+        elif try_FWD_format == 0:
+            message = "File " + file + " is in FWD format"
+            print(message)
+            log_array.append(message)
+            filetype_out = 'FWD'
+            correct_format = True
+            summary_inconsistency_value = try_FWD_format
+        elif try_PLUS_format == 0:
+            message = "File " + file + " is in PLUS format"
+            print(message)
+            log_array.append(message)
+            filetype_out = 'PLUS'
+            correct_format = True
+            summary_inconsistency_value = try_PLUS_format
+        elif try_DESIGN_format == 0:
+            message = "File " + file + " is in DESIGN format"
+            print(message)
+            log_array.append(message)
+            filetype_out = 'DESIGN'
+            correct_format = True
+            summary_inconsistency_value = try_DESIGN_format
+        # Find best-fitting file format
+        else:
+            list_of_formats = [try_AB_format, try_FWD_format, try_TOP_format, try_PLUS_format, try_DESIGN_format]
+            x = min(list_of_formats, key=float)
+            # Get the minimum number of SNPs that have to be correct to determine format
+            if header_row != 0:
+                n_snps = int(header_dict['Num SNPs'])
+            else:
+                n_snps = len(list(illumina_df.index))
+            min_snps = round(minimum_correct_snp_fraction * n_snps)
+            if try_AB_format == x and try_AB_format < min_snps:
+                message = "File " + file + " may be in AB format with " + str(try_AB_format) + \
+                          " inconsistent SNP(s)"
+                print(message)
+                log_array.append(message)
+                filetype_out = 'AB'
+                correct_format = False
+                summary_inconsistency_value = try_AB_format
+            elif try_TOP_format == x and try_TOP_format < min_snps:
+                message = "File " + file + " may be in TOP format with " + str(try_TOP_format) + \
+                          " inconsistent SNP(s)"
+                print(message)
+                log_array.append(message)
+                filetype_out = 'TOP'
+                correct_format = False
+                summary_inconsistency_value = try_TOP_format
+            elif try_FWD_format == x and try_FWD_format < min_snps:
+                message = "File " + file + " may be in FWD format with " + str(try_FWD_format) + \
+                          " inconsistent SNP(s)"
+                print(message)
+                log_array.append(message)
+                filetype_out = 'FWD'
+                correct_format = False
+                summary_inconsistency_value = try_FWD_format
+            elif try_PLUS_format == x and try_PLUS_format < min_snps:
+                message = "File " + file + " may be in PLUS format with " + str(try_PLUS_format) + \
+                          " inconsistent SNP(s)"
+                print(message)
+                log_array.append(message)
+                filetype_out = 'PLUS'
+                correct_format = False
+                summary_inconsistency_value = try_PLUS_format
+            elif try_DESIGN_format == x and try_DESIGN_format < min_snps:
+                message = "File " + file + " may be in DESIGN format with " + str(try_PLUS_format) + \
+                          " inconsistent SNP(s)"
+                print(message)
+                log_array.append(message)
+                filetype_out = 'DESIGN'
+                correct_format = False
+                summary_inconsistency_value = try_DESIGN_format
+            else:
+                message = "File type for " + file + \
+                          " could not be determined: too many SNPs with unclear formatting"
+                print(message)
+                filetype_out = None
+                summary_inconsistency_value = None
+                log_array.append(message)
+    if logfile is not None:
+        logging = make_logs.simple_log(log_array, file, logfile)
+    return filetype_out, correct_format, summary_inconsistency_value, logfile
+
+
+def snp_panel(var_ls, f):
+    """
+    Gets the SNP panel name and returns to user
+    :param var_ls: list of variant files (should be 1)
+    :param f: input file name
+    :return: message text for log file (printed here)
+    """
+    # Get possible SNP panels
+    error_text = []
+    if len(var_ls) == 1:
+        var = var_ls[0]
+        message = "SNPs from file " + f + " are found in variant file " + var
+        print(message)
+        error_text.append(message)
+    elif len(var_ls) > 1:
+        var_string = ', '.join(var_ls)
+        message = "SNPs from file " + f + " are found in variant files " + var_string + \
+                  "\n" + var_ls[0] + " was used for analysis"
+        print(message)
+        error_text.append(message)
+    else:
+        # Program should quit before seeing this message
+        message = "No conversion file contains all input SNPs"
+        print(message)
+        error_text.append(message)
+    return error_text
+
+
+#####################################################################################################################
+def file_format_check(input_dir, file_list, specified_file_type, get_snp_panel, verbose_logging, conversion_dir, return_log,
+                      assembly, summarize, tabular, species, make_ped_map):
+    """
+    Main file format check function. Determines (or checks) the file format according to the variant position files
+    :param input_dir: directory containing matrix files
+    :param file_list: list of input files for processing (may be None)
+    :param specified_file_type: input file type (default: mixed)
+    :param get_snp_panel: (Bool) output snp panel for user
+    :param verbose_logging: (Bool) write log to file
+    :param conversion_dir: directory containing variant position file (default: variant_position_files)
+    :param return_log: logfile name (will have timestamp information), may be supplied by another module
+    :param assembly: genome assembly name
+    :param summarize: (Bool) for use in conversion - summarize converted SNP file
+    :param tabular: Type of summary file to create (tabular, pretty, basic)
+    :param species: species name for variant position file
+    :param make_ped_map: (Bool) make PLINK PED and MAP files
+    :return: determined file type, correct format (Bool), output (empty) of writing log file
+    """
+    ##### Set some initial variables #####
+    correct_format = False
+    determined_ft = None
+    log_input = None
+    # Deal with AFFY-PLUS as an input type
     if specified_file_type == 'AFFY-PLUS':
         file_type = 'PLUS'
     else:
-        file_type = specified_file_type
-
-
-
-    # Get variant position files
-    variant_species_dir = os.path.join(conversion_dir, species)
-    variant_assembly_dir = os.path.join(variant_species_dir, assembly)
-    variant_files = os.listdir(variant_assembly_dir)
-    # Check that the assembly and species combination works
-    species_error = errors.assembly_species_error(conversion_dir, assembly, species)
-    if not species_error:
-        exit("Cannot find assembly name in any variant file in " + conversion_dir)
-    # Exclude any files without .csv ending (but with correct assembly)
-    variant_exclude = errors.non_csv_fmt_conversion_files(conversion_dir, assembly, species)
-    if variant_exclude:
-        for wrong_var in variant_exclude:
-            variant_files.remove(wrong_var)
-        if not variant_files:
-            exit("No variant conversion files in " + variant_assembly_dir)
-    else:
-        pass
-
+        file_type = specified_file_type  # from here, only use file_type var
     # Get affy_flag
     affy_flag = False
     if file_type == 'affymetrix' or specified_file_type == 'AFFY-PLUS':
         affy_flag = True
 
-    # Read in files and parse header info
-    correct_format = False
+    # Get all input files
+    snp_files_array, logfile = get_snp_files(file_list, input_dir, return_log)
+
+    # Get variant position files
+    variant_files = get_variant_files(conversion_dir, assembly, species)
+
+    # Check each file
     for file in snp_files_array:
+        # Set some initial variables
         print("Checking file " + file)
+        if verbose_logging is True:
+            if return_log:
+                timestr = time.strftime("%Y%m%d%H%M%S")
+                log_suffix = "-" + timestr + ".log"
+                log_input = make_logs.get_logname(log_suffix, file)
+            else:
+                log_input = None
+        else:
+            log_input = None
         file_path = os.path.join(input_dir, file)
         error_log_text = []
         summary_inconsistency_value = int
-        inequivalent_cols = []
+        correct_format = False  # set correct format as false initially
+        long_df_dict = {}
+        illumina_matrix_df = False
+
         # quick test for whether this still might be an affymetrix file
         affy_flag = affy_test(file_path, file, file_type, affy_flag)
+
+        # If affy_flag is True, parse affymetrix file
         if affy_flag is True:
-            # Test affy forward values here
-            affy_df = pd.read_csv(file_path, sep='\t', mangle_dupe_cols=True)
-            # make dataframe look like the illumina one (remove AB columns)
-            header_row = list(set(affy_df.columns))
-            header_row.remove('probeset_id')
-            # quick check to make sure header row is really affy format (2 columns for every sample)
-            head_check = affy_head_check(header_row)
-            if head_check is False:
-                message = "Affymetrix file may not be properly formatted: check columns"
-                warnings.warn(message, stacklevel=4)
-                error_log_text.append(message)
+            affy_header_dict, affy_df, log_input = parse_affy_file(file_path, file, log_input)
+            generic_input_df = affy_df
+            long_ft = False
+            illumina_df = None
+            header_row = 0
+            header_dict = None
+        # If an Illumina format
+        else:
+            # Parse header of Illumina file
+            header_row, header_dict = fp.parse_header(file_path)
+            numbers_exist = False
+            if 'Num Samples' in header_dict and 'Num SNPs' in header_dict:
+                numbers_exist = True
+            # Read in Illumina file
+            illumina_df, long_ft, log_input = read_illumina_input(file_path, header_row, file, log_input)
+            # If long file, create dict containing all dataframes by type
+            if file_type == 'LONG' or long_ft is True:
+                long_df_dict, log_input = get_long_df_dict(illumina_df, header_row, header_dict, numbers_exist, file, log_input)
+                generic_input_df = next(iter(long_df_dict.values()))
+            # If not long file, use dataframe as is
             else:
-                pass
-            affy_header_dict = {}
-            for value in header_row:
-                new_affy_df = affy_df[['probeset_id', value]].copy()
-                ab_list = ['AA', 'AB', 'BB', 'NoCall']
-                test_ab_df = ~new_affy_df.iloc[:, 1:].isin(ab_list)
-                not_ab = sum(test_ab_df.sum(axis=1))
-                affy_header_dict.update({value: not_ab})
-            copy_affy_df = affy_df.copy()  # keep a copy just in case
-            for keys in affy_header_dict:
-                if affy_header_dict[keys] == 0:
-                    affy_df.drop(columns=keys, inplace=True)
+                illumina_head_check, log_input = check_illumina_df_header(illumina_df, header_row, header_dict, numbers_exist, file, log_input)
+                generic_input_df = illumina_df
+                illumina_matrix_df = True
+        # Get corresponding variant file
+        converting_file = False
+        var_list, mod_verbose_log, alt_bool = vff.var_match(variant_files, conversion_dir, generic_input_df, file,
+                                                            converting_file,
+                                                            assembly, species)
+        for text in mod_verbose_log:
+            error_log_text.append(text)
+        if log_input is not None:
+            logging = make_logs.simple_log(error_log_text, file, logfile)
+        var_df = vff.get_var_df(conversion_dir, var_list[0], assembly, species, alt_bool)
 
-            # Get variant file using variant_file_finder
-            ##
-            converting_file = False
-            affy_df.rename(columns={'probeset_id': 'Name'}, inplace=True)
-            var_list, mod_verbose_log, alt_bool = vff.var_match(variant_files, conversion_dir, affy_df, file, converting_file,
-                                                      assembly, species)
-            for text in mod_verbose_log:
-                error_log_text.append(text)
-            var_df = vff.get_var_df(conversion_dir, var_list[0], assembly, species, alt_bool)
-
-            # Pass the dataframe to TFDP_format_check
-            if file_type == 'mixed':
-                is_mixed = True
-            else:
-                is_mixed = False
-            if specified_file_type == 'AFFY-PLUS':
-                affy_fmt = 'PLUS'
-            elif specified_file_type == 'affymetrix':
-                affy_fmt = 'FWD'
-            else:
-                affy_fmt = 'FWD'  # most likely mixed format (not from the check post-file-conversion)
-            format_check, logfile_name = TFDP_format_check(affy_df, var_df, affy_fmt, file, is_mixed, return_log)
-            summary_inconsistency_value = format_check
-            if format_check > 0:
-                if is_mixed is False:
-                    out_string = "Affymetrix file is incorrectly formatted - see log for details."
-                else:
-                    out_string = "Affymetrix file is incorrectly formatted - re-run with --input-format affymetrix for details"
-                warnings.warn(out_string, stacklevel=4)
-                filetype = None
-            else:  # format check is correct
-                if head_check is True:
-                    out_string = "File " + file + " is correctly formatted"
-                    print(out_string)
-                    error_log_text.append(out_string)
-                else:
-                    pass
-                filetype = 'affymetrix'
-                correct_format = True
-                if is_mixed is True:
-                    if head_check is True:
-                        out_string = "File " + file + " is in Affymetrix format"
-
-                    else:
-                        out_string = "File " + file + " appears to be in Affymetrix format, but is missing expected columns"
-                    print(out_string)
-                    error_log_text.append(out_string)
-            # Get possible SNP panels
-            if get_snp_panel is True:
-                snp_message = snp_panel(var_list, file)
-                for item in snp_message:
-                    error_log_text.append(item)
-            if verbose_logging is True:
-                if logfile_name is not None:
-                    log_name = logfile_name
-                else:
-                    if return_log is None:
-                        log_name = None
-                    else:
-                        log_name = return_log
-                v_log = make_logs.simple_log(error_log_text, file, log_name)
-            else:
-                v_log = None
+        # If Affymetrix file, check in TFDP
+        if affy_flag is True:
+            determined_ft, correct_format, summary_inconsistency_value, log_input = check_affy_format(generic_input_df, var_df, specified_file_type, file, file_type, summary_inconsistency_value, log_input)
             # Write summary file
             if summarize is True:
                 equiv = 0
                 inequiv = 0
-                sum_file = summ.write_summary(affy_df, 'FWD', file, summary_inconsistency_value, equiv, inequiv, tabular)
+                if specified_file_type == "AFFY-PLUS":
+                    sum_type = "PLUS"
+                else:  # specified type is "AFFY"
+                    sum_type = "FWD"
+                sum_file = summ.write_summary(generic_input_df, sum_type, file, summary_inconsistency_value, equiv, inequiv, tabular)
             else:
                 pass
-
-        else:  # Not affymetrix -> some sort of Illumina format
-            file_path = os.path.join(input_dir, file)
-            header_row, header_dict = fp.parse_header(file_path)
-            if 'Num Samples' in header_dict and 'Num SNPs' in header_dict:
-                numbers_exist = True
+        else:
+            pass
+        # If Illumina Long file, run TFDP on all dataframes
+        if file_type == 'LONG' or long_ft is True:
+            determined_ft, correct_format, summary_inconsistency_value, long_equivalency, long_inequivalency, log_input = check_long_format(long_df_dict, illumina_df, var_df, file, log_input)
+            if summarize is True:
+                sum_file = summ.write_summary(illumina_df, 'LONG', file, summary_inconsistency_value, long_equivalency,
+                                              long_inequivalency, tabular)
+        else:
+            pass
+        # If Illumina matrix format (format can be known or mixed), run AB_check and TFDP on dataset
+        if illumina_matrix_df is True:
+            is_mixed = False
+            determined_ft, correct_format, summary_inconsistency_value, logfile = check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed, header_row, header_dict, log_input)
+            # Write summary file
+            if summarize is True:
+                equiv = 0
+                inequiv = 0
+                sum_file = summ.write_summary(illumina_df, file_type, file, summary_inconsistency_value, equiv, inequiv, tabular)
             else:
-                numbers_exist = False
-            # Make new dataframes
-            with open(file_path, 'r') as input_file:
-                # Make sure input file will not throw a dataframe error (from an incorrect header structure)
-                try:
-                    df = pd.read_csv(input_file, skiprows=header_row, sep="\t")
-                except ParserError:
-                    exit("First line might not contain column names - check formatting")
-                long_ft = False
-                df_columns_long_check = list(df.columns)
-                for type_of_file in df_columns_long_check:
-                    if 'Allele1' in type_of_file:
-                        long_ft = True
-                if long_ft is False:
-                    # Put in a check here to make sure there are the same number of column labels as columns
-                    if 'Unnamed: 0' not in df.columns:
-                        df.index.names = ['Unnamed: 0']
-                        df.reset_index(inplace=True)
-                    df.rename(columns={'Unnamed: 0': 'Name'}, inplace=True)
+                pass
+        else:
+            pass
+        # Get possible SNP panels if requested
+        if get_snp_panel is True:
+            snp_message = snp_panel(var_list, file)
+            for item in snp_message:
+                error_log_text.append(item)
+        # Write plink files if required
+        if correct_format is True:
+            if make_ped_map is True:
+                basename = os.path.splitext(file)
+                ped_file = make_plink.create_ped_file(basename[0], generic_input_df, error_log_text)
+                map_file = make_plink.create_map_file(basename[0], generic_input_df, var_df, species, error_log_text)
 
-                #
-                # Check for long and if so, create df to get the right var file
-                df_columns_long_check = list(df.columns)
-                long_ft = False
-                for type_of_file in df_columns_long_check:
-                    if 'Allele1' in type_of_file:
-                        long_ft = True
-                if file_type == 'LONG' or long_ft is True:
-                    # make sure header info accurately reflects file
-                    if header_row != 0 and numbers_exist:
-                        samples_list = list(set(df['Sample ID']))
-                        num_samples = len(samples_list)
-                        num_snps = len(df['SNP Name'].unique())
-                        header_congruency = fp.check_header_data_congruency(header_dict, num_samples, num_snps)
-                        if header_congruency:
-                            append_text = "File " + file
-                            error_log_text.append(append_text)
-                        for each_warning in header_congruency:
-                            error_log_text.append(each_warning)
-                    else:
-                        pass
-                    # do stuff here to get the long file into arrays
-                    type_list = ['TOP', 'FWD', 'AB', 'DESIGN', 'PLUS']
-                    df_dict = {}
-                    for ty in type_list:
-                        out1, out2 = fc.gen_long_output_col_names(ty)
-                        # Make sure allele type exists
-                        if out1 not in df.columns or out2 not in df.columns:
-                            message = "Columns " + out1 + " and " + out2 + " might not be in the input file" ##### check long file equivalencies here
-                            warnings.warn(message, stacklevel=4)
-                        else:
-                            sub_long_df = df[['SNP Name', 'Sample ID', out1, out2]]
-                            # print new df by sample and save to dict by "file type"
-                            sample_list = sub_long_df['Sample ID']
-                            unique_samples = list(set(sample_list))
-                            pos1 = sub_long_df.columns.values[2]
-                            pos2 = sub_long_df.columns.values[3]
-                            output_df = sub_long_df[['SNP Name']].copy()
-                            output_df = output_df.rename(columns={'SNP Name': 'Name'})
-                            for sample in unique_samples:
-                                sub_sample_df = pd.DataFrame()
-                                sub_sample_df[sample] = sub_long_df[[pos1, pos2]].apply(lambda x: ''.join(x), axis=1)
-                                output_df[sample] = sub_sample_df[sample].apply(lambda v: v)
-                                df_dict.update({ty: output_df})
-                    # get var df
-                    converting_file = False
-                    df_var = next(iter(df_dict.values()))
-                    var_list, mod_verbose_log, alt_bool = vff.var_match(variant_files, conversion_dir, df_var, file, converting_file, assembly, species)
-                    for text in mod_verbose_log:
-                        error_log_text.append(text)
-                    var_df = vff.get_var_df(conversion_dir, var_list[0], assembly, species, alt_bool)
-                    # run file format check on each dataframe
-                    is_mixed = False
-                    correct_count = []
-                    ab_log_name = None
-                    logfile_name = None
-                    total_inconsistencies = 0
-                    for types in df_dict:
-                        if types == 'AB':
-                            if logfile_name is not None:
-                                return_log = logfile_name
-                            format_check, ab_log_name = AB_check(df_dict[types], file, is_mixed, return_log)
-                            if format_check > 0:
-                                warning = 'Columns for type ' + types + ' have unexpected values'
-                                print(warning)
-                                error_log_text.append(warning)
-                                correct_count.append(1)
-                                inequivalent_cols.append(types)
-                                total_inconsistencies = total_inconsistencies + format_check
-                            else:
-                                correct_count.append(0)
-                        else:
-                            if ab_log_name is not None:
-                                return_log = ab_log_name
-                            format_check, logfile_name = TFDP_format_check(df_dict[types], var_df, types, file, is_mixed, return_log)
-                            if format_check > 0:
-                                warning = 'Columns for type ' + types + ' have unexpected values'
-                                warnings.warn(warning, stacklevel=4)
-                                error_log_text.append(warning)
-                                correct_count.append(1)
-                                inequivalent_cols.append(types)
-                                total_inconsistencies = total_inconsistencies + format_check
-                            else:
-                                correct_count.append(0)
-                    # check internal consistency of each row
-                    long_equivalency, long_inequivalency, inequiv_dict = long_format_consistency_check(df, var_df)
-                    if long_inequivalency != 0:
-                        # Write inequivalencies to log file
-                        if verbose_logging is True:
-                            if logfile_name is not None:
-                                log_name = logfile_name
-                            else:
-                                if return_log is None:
-                                    log_name = None
-                                else:
-                                    log_name = return_log
-                            v_log = make_logs.long_inequivalency(file, log_name, inequiv_dict)
-                            logfile_name = v_log
-                        else:
-                            v_log = None
-                        # Warn inequivalencies
-                        warning = "One or more genotypes are inequivalent within a row"
-                        warnings.warn(warning, stacklevel=4)
-                        error_log_text.append(warning)
-
-                        # Get possible SNP panels
-                    if get_snp_panel is True:
-                        snp_message = snp_panel(var_list, file)
-                        for item in snp_message:
-                            error_log_text.append(item)
-
-                    if sum(correct_count) == 0:
-                        filetype = 'LONG'
-                        correct_format = True
-                        if long_inequivalency == 0:
-                            if specified_file_type == 'mixed':
-                                print("File " + file + " is in long format")
-                            else:
-                                print("File " + file + " is correctly formatted")
-                        elif long_inequivalency != 0:
-                            print("File " + file + " may have incorrect genotype data")
-
-                        summary_inconsistency_value = 0
-                    else:
-                        warning = "Long format file contains errors"
-                        print(warning)
-                        error_log_text.append(warning)
-                        summary_inconsistency_value = total_inconsistencies
-
-                        filetype = None
-                    if verbose_logging is True:
-                        if ab_log_name is not None and logfile_name is not None:
-                            if ab_log_name == logfile_name:
-                                log_name = logfile_name
-                        else:
-                            if ab_log_name is not None:
-                                log_name = ab_log_name
-                            elif logfile_name is not None:
-                                log_name = logfile_name
-                            else:
-                                if return_log is None:
-                                    log_name = None
-                                else:
-                                    log_name = return_log
-                        v_log = make_logs.simple_log(error_log_text, file, log_name)
-                    else:
-                        v_log = None
-                    if summarize is True:
-                        sum_file = summ.write_summary(df, 'LONG', file, summary_inconsistency_value, long_equivalency,
-                                                      long_inequivalency, tabular)
-                    else:
-                        pass
-
-                else:  # Not a LONG format file, but some Illumina matrix format
-                    # make sure header info accurately reflects file
-                    if header_row != 0 and numbers_exist:
-                        num_samples = len(df.columns) - 1
-                        num_snps = len(df.index)
-                        header_congruency = fp.check_header_data_congruency(header_dict, num_samples, num_snps)
-                        if header_congruency:
-                            append_text = "File " + file
-                            error_log_text.append(append_text)
-                        for each_warning in header_congruency:
-                            error_log_text.append(each_warning)
-                    # Get the right var file
-                    converting_file = False
-                    var_list, mod_verbose_log, alt_bool = vff.var_match(variant_files, conversion_dir, df, file, converting_file, assembly, species)
-                    for text in mod_verbose_log:
-                        error_log_text.append(text)
-                    var_df = vff.get_var_df(conversion_dir, var_list[0], assembly, species, alt_bool)
-                    # Check AB file format
-                    is_mixed = False
-                    ab_log_name = None
-                    logfile_name = None
-                    if file_type == "AB":
-                        format_check, ab_log_name = AB_check(df, file, is_mixed, return_log)  # format check should == 0 (no non-AA/AB/BB/-- values in AB file)
-                        summary_inconsistency_value = format_check
-                        if format_check != 0:
-                            warning = "AB file is incorrectly formatted - see log for details"
-                            warnings.warn(warning, stacklevel=4)
-                            filetype = None
-
-                        else:
-                            out_string = "File " + file + " is correctly formatted"
-                            print(out_string)
-                            error_log_text.append(out_string)
-                            filetype = 'AB'
-                            correct_format = True
-                    elif file_type == "TOP":
-                        format_check, logfile_name = TFDP_format_check(df, var_df, file_type, file, is_mixed, return_log)
-                        summary_inconsistency_value = format_check
-                        if format_check > 0:
-                            warning = "TOP file is incorrectly formatted - see log for details"
-                            warnings.warn(warning, stacklevel=4)
-                            filetype = None
-
-                        else:
-                            out_string = "File " + file + " is correctly formatted"
-                            print(out_string)
-                            error_log_text.append(out_string)
-                            filetype = 'TOP'
-                            correct_format = True
-                    elif file_type == 'FWD':
-                        format_check, logfile_name = TFDP_format_check(df, var_df, file_type, file, is_mixed, return_log)
-                        summary_inconsistency_value = format_check
-                        if format_check > 0:
-                            out_string = "FWD file is incorrectly formatted - see log for details"
-                            warnings.warn(out_string, stacklevel=4)
-                            filetype = None
-
-                        else:
-                            out_string = "File " + file + " is correctly formatted"
-                            print(out_string)
-                            error_log_text.append(out_string)
-                            filetype = 'FWD'
-                            correct_format = True
-                    elif file_type == 'DESIGN':
-                        format_check, logfile_name = TFDP_format_check(df, var_df, file_type, file, is_mixed, return_log)
-                        summary_inconsistency_value = format_check
-                        if format_check > 0:
-                            out_string = "DESIGN file is incorrectly formatted - see log for details"
-                            warnings.warn(out_string, stacklevel=4)
-                            filetype = None
-
-                        else:
-                            out_string = "File " + file + " is correctly formatted"
-                            print(out_string)
-                            error_log_text.append(out_string)
-                            correct_format = True
-                            filetype = 'DESIGN'
-                    elif file_type == 'PLUS':
-                        format_check, logfile_name = TFDP_format_check(df, var_df, file_type, file, is_mixed, return_log)
-                        summary_inconsistency_value = format_check
-                        if format_check > 0:
-                            out_string = "PLUS file is incorrectly formatted - see log for details"
-                            warnings.warn(out_string, stacklevel=4)
-                            filetype = None
-
-                        else:
-                            out_string = "File " + file + " is correctly formatted"
-                            print(out_string)
-                            error_log_text.append(out_string)
-                            correct_format = True
-                            filetype = 'PLUS'
-
-                    else:  # mix of format types or unknown format type
-                        # Warn if there are too few SNPs to make an assignment
-                        if len(df.index) < 50:
-                            out_string = "There may not be enough SNPs to determine matrix format accurately"
-                            warnings.warn(out_string, stacklevel=4)
-                            error_log_text.append(out_string)
-
-                        is_mixed = True
-                        # Test formats
-                        try_AB_format, AB_log_name = AB_check(df, file, is_mixed, return_log)
-                        try_TOP_format, logfile_name = TFDP_format_check(df, var_df, "TOP", file, is_mixed, return_log)
-                        try_FWD_format, logfile_name = TFDP_format_check(df, var_df, "FWD", file, is_mixed, return_log)
-                        try_PLUS_format, logfile_name = TFDP_format_check(df, var_df, "PLUS", file, is_mixed, return_log)
-                        try_DESIGN_format, logfile_name = TFDP_format_check(df, var_df, 'DESIGN', file, is_mixed, return_log)
-                        if try_AB_format == 0:
-                            message = "File " + file + " is in AB format"
-                            print(message)
-                            error_log_text.append(message)
-                            filetype = 'AB'
-                            correct_format = True
-                            summary_inconsistency_value = try_AB_format
-
-                        elif try_TOP_format == 0:
-                            message = "File " + file + " is in TOP format"
-                            print(message)
-                            error_log_text.append(message)
-                            filetype = 'TOP'
-                            correct_format = True
-                            summary_inconsistency_value = try_TOP_format
-                        elif try_FWD_format == 0:
-                            message = "File " + file + " is in FWD format"
-                            print(message)
-                            error_log_text.append(message)
-                            filetype = 'FWD'
-                            correct_format = True
-                            summary_inconsistency_value = try_FWD_format
-                        elif try_PLUS_format == 0:
-                            message = "File " + file + " is in PLUS format"
-                            print(message)
-                            error_log_text.append(message)
-                            filetype = 'PLUS'
-                            correct_format = True
-                            summary_inconsistency_value = try_PLUS_format
-                        elif try_DESIGN_format == 0:
-                            message = "File " + file + " is in DESIGN format"
-                            print(message)
-                            error_log_text.append(message)
-                            filetype = 'DESIGN'
-                            correct_format = True
-                            summary_inconsistency_value = try_DESIGN_format
-
-                        else:
-                            list_of_formats = [try_AB_format, try_FWD_format, try_TOP_format, try_PLUS_format, try_DESIGN_format]
-                            x = min(list_of_formats, key=float)
-                            # Get the minimum number of SNPs that have to be correct to determine format
-                            if header_row != 0:
-                                n_snps = int(header_dict['Num SNPs'])
-                            else:
-                                n_snps = len(list(df.index))
-                            min_snps = round(minimum_correct_snp_fraction * n_snps)
-                            if try_AB_format == x and try_AB_format < min_snps:
-                                message = "File " + file + " may be in AB format with " + str(try_AB_format) + \
-                                          " inconsistent SNP(s)"
-                                print(message)
-                                error_log_text.append(message)
-                                filetype = 'AB'
-                                correct_format = False
-                                summary_inconsistency_value = try_AB_format
-                            elif try_TOP_format == x and try_TOP_format < min_snps:
-                                message = "File " + file + " may be in TOP format with " + str(try_TOP_format) + \
-                                          " inconsistent SNP(s)"
-                                print(message)
-                                error_log_text.append(message)
-                                filetype = 'TOP'
-                                correct_format = False
-                                summary_inconsistency_value = try_TOP_format
-                            elif try_FWD_format == x and try_FWD_format < min_snps:
-                                message = "File " + file + " may be in FWD format with " + str(try_FWD_format) + \
-                                          " inconsistent SNP(s)"
-                                print(message)
-                                error_log_text.append(message)
-                                filetype = 'FWD'
-                                correct_format = False
-                                summary_inconsistency_value = try_FWD_format
-                            elif try_PLUS_format == x and try_PLUS_format < min_snps:
-                                message = "File " + file + " may be in PLUS format with " + str(try_PLUS_format) + \
-                                          " inconsistent SNP(s)"
-                                print(message)
-                                error_log_text.append(message)
-                                filetype = 'PLUS'
-                                correct_format = False
-                                summary_inconsistency_value = try_PLUS_format
-                            elif try_DESIGN_format == x and try_DESIGN_format < min_snps:
-                                message = "File " + file + " may be in DESIGN format with " + str(try_PLUS_format) + \
-                                          " inconsistent SNP(s)"
-                                print(message)
-                                error_log_text.append(message)
-                                filetype = 'DESIGN'
-                                correct_format = False
-                                summary_inconsistency_value = try_DESIGN_format
-                            else:
-                                message = "File type for " + file + \
-                                          " could not be determined: too many SNPs with unclear formatting"
-                                print(message)
-                                file_type = None
-                                error_log_text.append(message)
-                    # Write PED and MAP files
-                    if correct_format is True:
-                        if make_ped_map is True:
-                            basename = os.path.splitext(file)
-                            ped_file = make_plink.create_ped_file(basename[0], df, error_log_text)
-                            map_file = make_plink.create_map_file(basename[0], df, var_df, species, error_log_text)
-                    # Get possible SNP panels
-                    if get_snp_panel is True:
-                        snp_message = snp_panel(var_list, file)
-                        for item in snp_message:
-                            error_log_text.append(item)
-                    if verbose_logging is True:
-                        if ab_log_name is not None:
-                            log_name = ab_log_name
-                        elif logfile_name is not None:
-                            log_name = logfile_name
-                        else:
-                            if return_log is None:
-                                log_name = None
-                            else:
-                                log_name = return_log
-                        v_log = make_logs.simple_log(error_log_text, file, log_name)
-                    else:
-                        v_log = None
-                    # Write summary file
-                    if summarize is True:
-                        equiv = 0
-                        inequiv = 0
-                        sum_file = summ.write_summary(df, file_type, file, summary_inconsistency_value, equiv, inequiv, tabular)
-                    else:
-                        pass
-
-    return filetype, correct_format, v_log
+        # Write final log files
+        if log_input is not None:
+            logging = make_logs.simple_log(error_log_text, file, logfile)
+    return determined_ft, correct_format, log_input
 
 
 if __name__ == "__main__":
@@ -997,6 +1139,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     log_file = None
     file_format_check(args.input, args.file_list, args.input_format, args.get_snp_panel, args.verbose_logging, args.key_dir, log_file, args.assembly, args.summary, args.tabular, args.species, args.plink)
-
-
-
