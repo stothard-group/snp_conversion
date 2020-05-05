@@ -11,13 +11,13 @@ echo "Running test commands - please ignore system UserWarnings"
 # The commands in this block can be run individually within the sample_concordance directory, or from within this script
 
 # Concordance analysis between an Illumina LONG file and a VCF file, with tabular output
-python ../genotype_concordance.py --snp-panel input_files/G_CCGP_long_sample_input.txt --panel-type LONG --vcf-file input_files/SNPs_reduced_anon.vcf.gz --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --output-type tabular --output concordance_test1 > test_output/long_vs_vcf_tab_concordance.txt
+python ../genotype_concordance --snp-panel input_files/G_CCGP_long_sample_input.txt --panel-type LONG --vcf-file input_files/SNPs_reduced_anon.vcf.gz --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --output-type tabular --output concordance_test1 > test_output/long_vs_vcf_tab_concordance.txt
 
 # Concordance analysis between an Illumina LONG file and a VCF file, filtering on quality values, with pretty output
-python ../genotype_concordance.py --snp-panel input_files/G_CCGP_long_sample_input.txt --panel-type LONG --vcf-file input_files/SNPs_reduced_anon.vcf.gz --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --filter-vcf --qual 100 --output-type pretty --output concordance_q100_test2 > test_output/long_vs_vcf_q100_pretty_concordance.txt
+python ../genotype_concordance --snp-panel input_files/G_CCGP_long_sample_input.txt --panel-type LONG --vcf-file input_files/SNPs_reduced_anon.vcf.gz --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --filter-vcf --qual 100 --output-type pretty --output concordance_q100_test2 > test_output/long_vs_vcf_q100_pretty_concordance.txt
 
 # Concordance analysis between an Affymetrix file and a VCF file, outputting a list of discordant positions
-python ../genotype_concordance.py --snp-panel input_files/G_CCGP_affy_short_input.txt --panel-type affymetrix --vcf-file input_files/SNPs_reduced_anon.vcf.gz --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --extract-discordant --output concordance_affy > test_output/affy_vs_vcf_concordance.txt
+python ../genotype_concordance --snp-panel input_files/G_CCGP_affy_short_input.txt --panel-type affymetrix --vcf-file input_files/SNPs_reduced_anon.vcf.gz --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --extract-discordant --output concordance_affy > test_output/affy_vs_vcf_concordance.txt
 
 ########################################################################################################################
 

@@ -11,26 +11,26 @@ echo "Running test commands - please ignore system UserWarnings"
 
 ## File format checking
 # Determine the format of all files in the sample directory and retrieve SNP panel
-python ../SNP_conversion.py check_format --input-dir input_files --assembly UMD3_1_chromosomes --get-snp-panel --species bos_taurus > test_output/check_input_files_output.txt
+python ../snp_conversion check_format --input-dir input_files --assembly UMD3_1_chromosomes --get-snp-panel --species bos_taurus > test_output/check_input_files_output.txt
 # Check whether Illumina Forward format file is correctly formatted, specifying the key file directory. Output corresponding PED and MAP files
-python ../SNP_conversion.py check_format --input-dir input_files --file-list 50kv3_mFWD_14June2019.txt --plink --input-format FWD --assembly UMD3_1_chromosomes --key-dir variant_position_files --species bos_taurus > test_output/check_forward_files_output.txt
+python ../snp_conversion check_format --input-dir input_files --file-list 50kv3_mFWD_14June2019.txt --plink --input-format FWD --assembly UMD3_1_chromosomes --key-dir variant_position_files --species bos_taurus > test_output/check_forward_files_output.txt
 # Get a list of inconsistent markers in a file suspected to be in Top format, and write all output to a log file
-python ../SNP_conversion.py check_format --input-dir input_files --file-list 50kv3_mTOP_inconsistent.txt --input-format TOP --assembly UMD3_1_chromosomes --verbose --species bos_taurus > test_output/check_inconsistent_files_output.txt
+python ../snp_conversion check_format --input-dir input_files --file-list 50kv3_mTOP_inconsistent.txt --input-format TOP --assembly UMD3_1_chromosomes --verbose --species bos_taurus > test_output/check_inconsistent_files_output.txt
 
 # Output a tab-formatted summary file after checking the format of a Long-format file
-python ../SNP_conversion.py check_format --input-dir input_files --file-list 50kv3_Long_14June2019.txt --input-format LONG --assembly UMD3_1_chromosomes --summary --tabular --species bos_taurus > test_output/check_long_format_file_output.txt
+python ../snp_conversion check_format --input-dir input_files --file-list 50kv3_Long_14June2019.txt --input-format LONG --assembly UMD3_1_chromosomes --summary --tabular --species bos_taurus > test_output/check_long_format_file_output.txt
 
 ## File Conversion
 # Convert an Illumina matrix file in Top format to a Long format file without specifying an output suffix
-python ../SNP_conversion.py convert_file --input-dir input_files --file-list 50kv3_mTOP_14June2019.txt --input-format TOP  --output-format LONG --assembly UMD3_1_chromosomes --species bos_taurus > test_output/convert_top_to_long_output.txt
+python ../snp_conversion convert_file --input-dir input_files --file-list 50kv3_mTOP_14June2019.txt --input-format TOP  --output-format LONG --assembly UMD3_1_chromosomes --species bos_taurus > test_output/convert_top_to_long_output.txt
 # Convert a list of files of unknown or mixed formats to Forward format, specifying the output suffix 'FORWARD'
-python ../SNP_conversion.py convert_file --input-dir input_files --file-list 50kv3_Long_14June2019.txt,50kv3_mTOP_14June2019.txt --output-format FWD --output-name FORWARD --assembly UMD3_1_chromosomes --species bos_taurus > test_output/convert_mixed_to_forward_output.txt
+python ../snp_conversion convert_file --input-dir input_files --file-list 50kv3_Long_14June2019.txt,50kv3_mTOP_14June2019.txt --output-format FWD --output-name FORWARD --assembly UMD3_1_chromosomes --species bos_taurus > test_output/convert_mixed_to_forward_output.txt
 # Convert a file from Affymetrix (native) to Affymetrix Plus format, specifying the number of threads and output suffix 'affy_plus'
-python ../SNP_conversion.py convert_file --input-dir input_files --file-list G_CCGP_Axiom_sample.txt --input-format affymetrix --output-format AFFY-PLUS --output-name affy_plus --assembly UMD3_1_chromosomes --species bos_taurus --threads 2 > test_output/convert_affy_native_to_plus_output.txt
+python ../snp_conversion convert_file --input-dir input_files --file-list G_CCGP_Axiom_sample.txt --input-format affymetrix --output-format AFFY-PLUS --output-name affy_plus --assembly UMD3_1_chromosomes --species bos_taurus --threads 2 > test_output/convert_affy_native_to_plus_output.txt
 
 ## Merging files
 # Merge a list of files in Forward format and output the file 'merged_forward_files.txt'
-python ../SNP_conversion.py merge_files --input-dir input_files --file-list 50kv3_mFWD_part1.txt,50kv3_mFWD_part2.txt --input-format FWD --output-name merged_forward_files.txt > test_output/merge_forward_files_output.txt
+python ../snp_conversion merge_files --input-dir input_files --file-list 50kv3_mFWD_part1.txt,50kv3_mFWD_part2.txt --input-format FWD --output-name merged_forward_files.txt > test_output/merge_forward_files_output.txt
 
 ########################################################################################################################
 
