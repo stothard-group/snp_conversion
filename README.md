@@ -5,13 +5,18 @@
 - DATE: APR 7, 2020
 - VERS: 2.0
 
-This program accepts Illumina genotype files in matrix format (AB, Forward, Top, Design, Plus) Long format, and Affymetrix
- files, and using previously computed variant position files for SNP datasets, checks the input file for formatting and 
- SNP accuracy. It can also convert between formats and merge files of the same format. 
+This program accepts Illumina genotype files in matrix format (AB, Forward, Top,
+ Design, Plus) Long format, and Affymetrix files, and using previously computed 
+ variant position files for SNP datasets, checks the input file for formatting 
+ and SNP accuracy. It can also convert between formats and merge files of the 
+ same format. 
  
-SNP_conversion.py is written in Python 3. Please read the INSTALL file prior to use.
+SNP_conversion.py is written in Python 3. Please read the INSTALL file prior to 
+use.
 
 README Sections
+
+[Quick Start](#quick-start)
 
 [Program Utilities](#program-utilities)
 
@@ -28,12 +33,35 @@ README Sections
 [Example Commands](#example-commands)
 
 
+## Quick Start
+
+Make sure that you have installed the required python libraries listed in the 
+INSTALL file.
+
+1. Download the program using git clone: 
+`git clone https://github.com/stothard-group/snp_conversion_2.git`
+2. Create a directory to store the conversion files. By default, the program 
+looks for these in the directory `variant_position_files`, however this can be 
+changed with the ``--key-dir`` option.
+3. Add the conversion files to this directory.
+4. change directories to the `sample_files` directory and execute the 
+`sample_conversions.sh` script:
+`./sample_conversions.sh`
+
+The program is executed using several small datasets to test the check_format, 
+convert_file, and merge_files utilities. This script will move all output files 
+into the directory `sample_files/test_output/`, and compare these files with 
+the expected files in `sample_files/sample_output/`. If the files are the same, 
+the output `No differences found` is printed to the screen for each comparison. 
+A list of sample commands found in the script is given below in 
+[Example Commands](#example-commands), with a short explanation of each.
+
 ## Program Utilities
 
 ### Usage to check the format of input file(s) only:
 
 ```
-usage: python SNP_conversion.py check_format [-h] [--input-dir INPUT_DIR]
+usage: ./snp_conversion check_format [-h] [--input-dir INPUT_DIR]
                                       [--file-list FILE_LIST]
                                       [--input-format {TOP,FWD,AB,LONG,DESIGN,PLUS,mixed,affymetrix}]
                                       [--get-snp-panel] [--key-dir KEY_DIR]
@@ -47,7 +75,7 @@ the following arguments are required: --assembly, --species
 ### Usage to convert input file(s) to new format (and check file formats):
 
 ```
-usage: python SNP_conversion.py convert_file [-h] [--input-dir INPUT_DIR]
+usage: ./snp_conversion convert_file [-h] [--input-dir INPUT_DIR]
                                       [--file-list FILE_LIST]
                                       [--input-format {TOP,FWD,AB,LONG,DESIGN,PLUS,mixed,affymetrix}]
                                       --output-format
@@ -63,7 +91,7 @@ the following arguments are required: --output-format, --assembly, --species
 
 ### Usage to merge multiple files of the same format:
 ```
-usage: python SNP_conversion.py merge_files [-h] --input-dir INPUT_DIR
+usage: ./snp_conversion merge_files [-h] --input-dir INPUT_DIR
                                      [--file-list FILE_LIST]
                                      [--input-format {TOP,FWD,AB,LONG,DESIGN,PLUS,affymetrix}]
                                      --output-name OUTPUT_NAME
@@ -336,28 +364,28 @@ Determine the format of all files in a directory, and return the variant file na
 corresponds to each file
 
 ```
-python SNP_conversion.py check_format --input-dir [input_dir] --assembly [assembly] --species [species] --get-snp-panel
+./snp_conversion check_format --input-dir [input_dir] --assembly [assembly] --species [species] --get-snp-panel
 ```
 
 Check whether a list of files in Illumina Forward format are correctly formatted and specify the directory
 containing variant files
 
 ```
-python SNP_conversion.py check_format --input-dir [input_dir] --file-list [file1,file2..fileN] --input-format FWD
+./snp_conversion check_format --input-dir [input_dir] --file-list [file1,file2..fileN] --input-format FWD
  --assembly [assembly] --species [species] --key-dir [variant_file_dir]
 ```
 
 Get a list of inconsistent markers in a file suspected to be in Top format, and write all output to a log file 
 
 ```
-python SNP_conversion.py check_format --input-dir [input_dir] --file-list [file1] --input-format TOP
+./snp_conversion check_format --input-dir [input_dir] --file-list [file1] --input-format TOP
  --assembly [assembly] --species [species] --verbose
 ```
 
 Output a tab-formatted summary file after checking the format of a Long-format file
  
  ```
-python SNP_conversion.py check_format --input-dir [input_dir] --file-list [file1] --input-format Long
+./snp_conversion check_format --input-dir [input_dir] --file-list [file1] --input-format Long
  --assembly [assembly] --species [species] --summary --tabular
 ```
 The summary option can also be used with the convert_file module.
@@ -368,14 +396,14 @@ The summary option can also be used with the convert_file module.
 Convert an Illumina matrix file in Top format to a Long format file without specifying an output suffix
  
  ```
-python SNP_conversion.py convert_file --input-dir [input_dir] --file-list [file1] --input-format TOP 
+./snp_conversion convert_file --input-dir [input_dir] --file-list [file1] --input-format TOP 
 --output-format LONG --assembly [assembly] --species [species]
 ```
 
 Convert a list of files of unknown or mixed formats to Forward format, specifying the output suffix 'FORWARD'
 
  ```
-python SNP_conversion.py convert_file --input-dir [input_dir] --file-list [file1] --output-format FWD 
+./snp_conversion convert_file --input-dir [input_dir] --file-list [file1] --output-format FWD 
 --output-name FORWARD --assembly [assembly] --species [species]
 ```
 
@@ -383,7 +411,7 @@ Convert a file from Affymetrix (native) to Affymetrix Plus format, specifying th
 suffix 'affy_plus'
 
 ```
-python SNP_conversion.py convert_file --input-dir [input_dir] --file-list [file1] --input-format affymetrix 
+./snp_conversion convert_file --input-dir [input_dir] --file-list [file1] --input-format affymetrix 
 --output-format AFFY-PLUS --output-name affy_plus --assembly [assembly] --species [species] --threads 4
 ```
 
@@ -392,7 +420,7 @@ python SNP_conversion.py convert_file --input-dir [input_dir] --file-list [file1
 Merge a list of files in Design format and output the file 'merged_design_files.txt'
 
 ```
-python SNP_conversion.py merge_files --input-dir [input_dir] --file-list [file1,file2,file3] 
+./snp_conversion merge_files --input-dir [input_dir] --file-list [file1,file2,file3] 
 --input-format DESIGN --output-name merged_design_files.txt
 ```
 
