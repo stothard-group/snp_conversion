@@ -205,7 +205,7 @@ using the predicted file format as the input format.
 
 #### Input file types
 
-See [DNA strand designations](dna_strand_designations.pdf) for an in-depth explanation of the Illumina Forward, Top, 
+See [DNA strand designations](docs/dna_strand_designations.pdf) for an in-depth explanation of the Illumina Forward, Top, 
 AB, and Design formats as they relate to the genome.
 
 Briefly:
