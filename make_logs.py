@@ -7,6 +7,12 @@ import pandas as pd
 
 
 def get_logname(suffix, input_file):
+    """
+    Creates a logfile output name
+    :param suffix: suffix to add, usually datetime.log
+    :param input_file: input file name
+    :return: logfile name
+    """
     if input_file.endswith(".txt"):
         log_name = input_file.replace(".txt", suffix, 1)
     elif input_file.endswith(".csv"):
@@ -17,6 +23,16 @@ def get_logname(suffix, input_file):
 
 
 def inconsistent_values_homozygous(in_file, log_exists, user_allele, var_alleles, index, col0):
+    """
+    Writes log file for inconsistent values that are HOMOZYGOUS
+    :param in_file: input file name
+    :param log_exists: logfile name
+    :param user_allele: allele in user input file
+    :param var_alleles: alleles in variant file
+    :param index: SNP marker name
+    :param col0: individual name
+    :return: logfile name
+    """
     # open log file in append mode (if new file, write header information)
     if log_exists is not None:
         log_file_name = log_exists
@@ -42,6 +58,15 @@ def inconsistent_values_homozygous(in_file, log_exists, user_allele, var_alleles
 
 
 def inconsistent_values(var_df, sample, user_df, in_file, log_exists):
+    """
+    Writes log file for inconsistent values that are HETEROZYGOUS
+    :param var_df: variant dataframe
+    :param sample: individual name
+    :param user_df: input dataframe
+    :param in_file: input file name
+    :param log_exists: logfile
+    :return: logfile name
+    """
     # open log file in append mode (if new file, write header information)
     if log_exists is not None:
         log_file_name = log_exists
@@ -108,6 +133,13 @@ def inconsistent_values(var_df, sample, user_df, in_file, log_exists):
 
 
 def long_inequivalency(in_file, log_exists, inequiv_info):
+    """
+    Writes log file containing inequivalencies in LONG format file
+    :param in_file: input file
+    :param log_exists: log file name
+    :param inequiv_info: dict containing inequivalencies ({index: row})
+    :return: logfile name
+    """
     # open log file in append mode (if new file, write header information)
     if log_exists is not None:
         log_file_name = log_exists
@@ -136,6 +168,14 @@ def long_inequivalency(in_file, log_exists, inequiv_info):
 
 
 def ab_warning(dataframe, new_df, filename, log_name):
+    """
+    Generates a logfile for incorrect AB data (also parses data)
+    :param dataframe: AB dataframe
+    :param new_df: df containing wrong AB values
+    :param filename: input filename
+    :param log_name: logfile
+    :return: logfile name
+    """
     if log_name is not None:
         log_file_name = log_name
     else:
@@ -175,6 +215,14 @@ def ab_warning(dataframe, new_df, filename, log_name):
 
 
 def simple_log(message, input_file, log_name):
+    """
+    Creates a simple log file using the logfile name already in use, or creates a new file name
+    :param message: list of messages to write
+    :param input_file: input file name
+    :param log_name: log name for writing
+    :return: logfile name
+    """
+
     if log_name is not None:
         log_file_name = log_name
     else:
