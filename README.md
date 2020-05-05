@@ -165,6 +165,11 @@ For file conversion, the file type combinations are restricted to the following:
 **Note that AB format is not a valid input format for file conversion, as there is not enough information in the AB file 
 to support conversion**
 
+## Merge Files Inputs
+
+**All input for the merge_files utility must be of the same file type. The merge_files utility does not check that 
+this is the case, so the onus is on the user to use check_format, and ensure that only files of the same format are 
+merged.**
 
 ### Internal file formatting
 
@@ -271,7 +276,7 @@ AB format matrix files cannot be converted to other file types.
 ### Incorrect SNP threshold
 
 By default, 95% of markers in these input files must be correct for the script to make a prediction. However, this 
-value can be changed by editing the variable `minimum_correct_snp_fraction` at the top of the check_format module.
+value can be changed by editing the variable `minimum_correct_snp_fraction` at the top of `lib/check_format`.
 
 ### Creating a summary
 
