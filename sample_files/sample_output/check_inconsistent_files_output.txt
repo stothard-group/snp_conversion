@@ -1,1 +1,2 @@
 Checking file 50kv3_mTOP_inconsistent.txt
+TOP file is incorrectly formatted - see log for details
