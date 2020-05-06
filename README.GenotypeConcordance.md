@@ -9,9 +9,12 @@ This program determines the concordance of variants between VCF genotype files
 and SNP panel files (both Illumina and Affymetrix), using previously computed 
 variant position files. 
 
-The Genotype Concordance program is written in Python 3. See the INSTALL file for installation instructions.
+The Genotype Concordance program is written in Python 3. See the INSTALL file 
+for installation instructions.
 
 README sections
+
+[Quick Start](#quick-start)
 
 [Usage](#usage)
 
@@ -19,9 +22,11 @@ README sections
 
 [Input Files](#input-files)
 
+[Variant Files](#genotype-conversion-key-files-variant-files)
+
 [Filtering Options](#filtering-options)
 
-[Output Options](#output-options)
+[Program Output](#program-output)
 
 * [Metastatistics](#metastatistics)
 * [Statistics](#statistics)
@@ -35,10 +40,34 @@ README sections
 [Example Commands](#example-commands)
 
 
+## Quick Start
+
+Make sure that you have installed the required python libraries listed in the 
+INSTALL file.
+
+1. Download the program using git clone: 
+`git clone https://github.com/stothard-group/snp_conversion_2.git`
+2. Create a directory to store the conversion files. By default, the program 
+looks for these in the directory `variant_position_files`, however this can be 
+changed with the ``--key-dir`` option.
+3. Add the conversion files to this directory.
+4. Change directories to the `concordance_sample_files` directory and execute 
+the `sample_concordance.sh` script:
+`./sample_concordance.sh`
+
+The program is executed using several small datasets to test assess concordance 
+of an Illumina (LONG format) and Affymetrix dataset with a sample VCF file. 
+This script will move all output files into the directory 
+`concordance_sample_files/test_output/`, and compare these files with 
+the expected files in `concordance_sample_files/sample_output/`. If the files 
+are the same, the output `No differences found` is printed to the screen for 
+each comparison. A list of sample commands found in the script is given below in 
+[Example Commands](#example-commands), with a short explanation of each.
+
 ## Usage
 
 ```
-usage: genotype_concordance.py [-h] --snp-panel SNP_PANEL --panel-type
+usage: ./genotype_concordance  [-h] --snp-panel SNP_PANEL --panel-type
                                {TOP,FWD,AB,PLUS,DESIGN,LONG,affymetrix}
                                --vcf-file VCF_FILE [--key-dir KEY_DIR]
                                --assembly ASSEMBLY
@@ -107,7 +136,7 @@ The SNP panel file can be in either Illumina or Affymetrix format. For Illumina,
  concordance analysis. While the program will do this for you with any type of 
  allowed input, **it is strongly recommended that you perform this 
  conversion separately prior to running genotype_concordance.py, by using the 
- convert_file utility within the SNP_conversion.py program.** This is because 
+ convert_file utility within the snp_conversion program.** This is because 
  conversion can be a memory- and time-intensive process, and if the 
  concordance analysis is stopped for any reason, conversion will need to be 
  redone. 
@@ -121,20 +150,18 @@ native, uncompressed format. The path to the VCF file must be specified with
 `--vcf-file`. The VCF file may contain positions and samples not found in the 
 SNP panel file. 
 
-#### Genotype conversion key files (Variant Files)
+## Genotype conversion key files (Variant Files)
 
 Variant files contain strand format information for the markers in each panel, 
 which is specific to the genomic assembly. These files are required for format 
 checking and conversion prior to the concordance analysis. The assembly name 
-and species information 
-must therefore be specified when running check_format and convert_file modules 
-using the `--assembly` and `species` options, respectively. SNP conversion modules 
-will 
-detect the matching or best-matching variant file. The filename for all variant 
-files will have the structure 
-`[panel name].[assembly].[conversion|position].csv[.gz]`. Ideally, the user input file 
-will contain all the markers present in a single variant file, and this file 
-will be used in format checking. 
+and species information must therefore be specified when running `check_format` 
+and `convert_file` utilities using the `--assembly` and `--species` options, 
+respectively. SNP conversion utilities will detect the matching or best-matching 
+variant file. The filename for all variant files will have the structure 
+`[panel name].[assembly].[conversion|position].csv[.gz]`. Ideally, the user 
+input file will contain all the markers present in a single variant file, and 
+this file will be used in format checking. 
 
 If there is not an exact match between the user input markers and those in the 
 variant file, Genotype Concordance modules will select the file that contains 
@@ -143,13 +170,14 @@ the user input file that are not found in the best-matching variant file, SNP
 conversion will exit and print the orphan markers to the file 
 `[snp panel basename]_problem_variants.txt`.
 
+Variant files should be placed in the directory 
+`variant_position_files/[species]/[assembly]/`. A different variant file 
+directory can be specified, but it must preserve the 
+`[dir]/[species]/[assembly]/` structure. Please store the variant files, and 
+only the variant files, in their own directory.
 
-The default directory for the variant files is `variant_position_files/[species]/[assembly]/`. A different 
-variant file directory can be specified, but it must preserve the `[dir]/[species]/[assembly]/` structure.
-Please store the variant files, and only variant files, in their own directory.
-
-The variant file headers (indicated by lines beginning with '#') contain more information about variant 
-file structure. 
+The variant file headers (indicated by lines beginning with '#') contain more 
+information about variant file structure. 
 
 ## Filtering Options
 
@@ -162,7 +190,7 @@ will include only variants that have quality scores greater than this value. By
  or a list of values separated by commas (but no spaces).
  
  
-## Output Options
+## Program Output
 
 The Genome Concordance program generates two main output files: a metastatistics 
 report containing the overall concordance statistics of the two files, and a 
@@ -288,33 +316,50 @@ date and timestamp, followed by ".log".
 
 ## Example commands
 
-Below are some sample commands for common genotype concordance tasks. Sample 
-data are provided to run each of these commands within the 
-`concordance_sanple_files` directory. In `concordance_sanple_files`, running 
-the script `./sample_conversions.sh` will run the commands below with the 
-sample data and compare the outputs to files previously generated in 
-`sample_output`. 
+Below are some sample commands for genotype_concordance tasks. Sample data are 
+provided to run each of these commands within the 
+`concordance_sample_files/input_files/` directory. In 
+`concordance_sample_files`, running the bash script `./sample_concordance.sh` 
+will execute the commands below. The bash 
+script will then move all output files to the directory 
+`concordance_sample_files/test_output/` and compare these files to files 
+previously generated in `concordance_sample_files/sample_output/`. Using these 
+commands, messaging that is normally printed to the screen is piped to output 
+files ending with "*_output.txt".
 ****
 Note that you may have to make the script executable using 
 
 ```
-chmod u+x sample_conversions.sh
+chmod u+x sample_concordance.sh
 ``` 
 
 Concordance analysis between an Illumina LONG file and a VCF file, with tabular 
 output
 ```
- python ../genotype_concordance.py --snp-panel input_files/G_CCGP_long_sample_input.txt --panel-type LONG --vcf-file input_files/SNPs_reduced_7M.recode.vcf --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --output-type tabular --output concordance_test1 > test_output/long_vs_vcf_tab_concordance.txt
+python ../genotype_concordance \
+--snp-panel input_files/G_CCGP_long_sample_input.txt --panel-type LONG \
+--vcf-file input_files/SNPs_reduced_anon.vcf.gz --species bos_taurus \
+--assembly ARS-UCD1_2_Btau5_0_1Y --output-type tabular \
+--output concordance_test1 > test_output/long_vs_vcf_tab_concordance.txt
 ```
 
 Concordance analysis between an Illumina LONG file and a VCF file, filtering on 
 quality values, with pretty output
 ```
-python ../genotype_concordance.py --snp-panel input_files/G_CCGP_long_sample_input.txt --panel-type LONG --vcf-file input_files/SNPs_reduced_7M.recode.vcf --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --filter-vcf --qual 100 --output-type pretty --output concordance_q100_test2 > test_output/long_vs_vcf_q100_pretty_concordance.txt
+python ../genotype_concordance \
+--snp-panel input_files/G_CCGP_long_sample_input.txt --panel-type LONG \
+--vcf-file input_files/SNPs_reduced_anon.vcf.gz --species bos_taurus \
+--assembly ARS-UCD1_2_Btau5_0_1Y --filter-vcf --qual 100 --output-type pretty \
+--output concordance_q100_test2 \
+> test_output/long_vs_vcf_q100_pretty_concordance.txt
 ```
 
 Concordance analysis between an Affymetrix file and a VCF file, outputting a 
 list of discordant positions
 ```
-python ../genotype_concordance.py --snp-panel input_files/G_CCGP_affy_short_input.txt --panel-type affymetrix --vcf-file input_files/SNPs_reduced_7M.recode.vcf --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --extract-discordant --output concordance_affy > test_output/affy_vs_vcf_concordance.txt
+python ../genotype_concordance \
+--snp-panel input_files/G_CCGP_affy_short_input.txt --panel-type affymetrix \
+--vcf-file input_files/SNPs_reduced_anon.vcf.gz --species bos_taurus \
+--assembly ARS-UCD1_2_Btau5_0_1Y --extract-discordant \
+--output concordance_affy > test_output/affy_vs_vcf_concordance.txt
 ```
