@@ -736,7 +736,7 @@ def check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed,
             if format_check != 0:
                 out_string = "AB file is incorrectly formatted - see log for details"
             else:
-                out_string = "File " + file + " is correctly formatted"
+                out_string = "File " + file + " is correctly formatted in Illumina AB format"
                 filetype_out = 'AB'
                 correct_format = True
         elif file_type == "TOP":
@@ -746,7 +746,7 @@ def check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed,
             if format_check > 0:
                 out_string = "TOP file is incorrectly formatted - see log for details"
             else:
-                out_string = "File " + file + " is correctly formatted"
+                out_string = "File " + file + " is correctly formatted in Illumina TOP format"
                 filetype_out = 'TOP'
                 correct_format = True
         elif file_type == 'FWD':
@@ -756,7 +756,7 @@ def check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed,
             if format_check > 0:
                 out_string = "FWD file is incorrectly formatted - see log for details"
             else:
-                out_string = "File " + file + " is correctly formatted"
+                out_string = "File " + file + " is correctly formatted in Illumina FORWARD format"
                 filetype_out = 'FWD'
                 correct_format = True
         elif file_type == 'DESIGN':
@@ -766,7 +766,7 @@ def check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed,
             if format_check > 0:
                 out_string = "DESIGN file is incorrectly formatted - see log for details"
             else:
-                out_string = "File " + file + " is correctly formatted"
+                out_string = "File " + file + " is correctly formatted in Illumina DESIGN format"
                 correct_format = True
                 filetype_out = 'DESIGN'
         elif file_type == 'PLUS':
@@ -776,7 +776,7 @@ def check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed,
             if format_check > 0:
                 out_string = "PLUS file is incorrectly formatted - see log for details"
             else:
-                out_string = "File " + file + " is correctly formatted"
+                out_string = "File " + file + " is correctly formatted in Illumina PLUS format"
                 correct_format = True
                 filetype_out = 'PLUS'
         else:
@@ -799,7 +799,7 @@ def check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed,
         try_PLUS_format, logfile = TFDP_format_check(illumina_df, var_df, "PLUS", file, is_mixed, logfile)
         try_DESIGN_format, logfile = TFDP_format_check(illumina_df, var_df, 'DESIGN', file, is_mixed, logfile)
         if try_AB_format == 0:
-            message = "File " + file + " is in AB format"
+            message = "File " + file + " is correctly formatted in Illumina AB format"
             print(message)
             log_array.append(message)
             filetype_out = 'AB'
@@ -807,28 +807,28 @@ def check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed,
             summary_inconsistency_value = try_AB_format
 
         elif try_TOP_format == 0:
-            message = "File " + file + " is in TOP format"
+            message = "File " + file + " is correctly formatted in Illumina TOP format"
             print(message)
             log_array.append(message)
             filetype_out = 'TOP'
             correct_format = True
             summary_inconsistency_value = try_TOP_format
         elif try_FWD_format == 0:
-            message = "File " + file + " is in FWD format"
+            message = "File " + file + " is correctly formatted in Illumina FWD format"
             print(message)
             log_array.append(message)
             filetype_out = 'FWD'
             correct_format = True
             summary_inconsistency_value = try_FWD_format
         elif try_PLUS_format == 0:
-            message = "File " + file + " is in PLUS format"
+            message = "File " + file + " is correctly formatted in Illumina PLUS format"
             print(message)
             log_array.append(message)
             filetype_out = 'PLUS'
             correct_format = True
             summary_inconsistency_value = try_PLUS_format
         elif try_DESIGN_format == 0:
-            message = "File " + file + " is in DESIGN format"
+            message = "File " + file + " is correctly formatted in Illumina DESIGN format"
             print(message)
             log_array.append(message)
             filetype_out = 'DESIGN'
@@ -886,7 +886,7 @@ def check_illumina_matrix_format(illumina_df, var_df, file_type, file, is_mixed,
                 summary_inconsistency_value = try_DESIGN_format
             else:
                 message = "File type for " + file + \
-                          " could not be determined: too many SNPs with unclear formatting"
+                          " could not be determined: too many SNPs with inconsistent formatting"
                 print(message)
                 filetype_out = None
                 summary_inconsistency_value = None
