@@ -13,8 +13,8 @@ import warnings
 import time
 import concurrent.futures as cf
 import lib.variant_file_finder as vff
-import lib.make_logs
-import lib.errors
+import lib.make_logs as make_logs
+import lib.errors as errors
 from functools import reduce
 from toolz import interleave
 from pandas.errors import ParserError
