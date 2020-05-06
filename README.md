@@ -24,7 +24,7 @@ README Sections
 
 [Input Files](#input-files)
 
-[Variant Files](#variant-files)
+[Variant Files](#genotype-conversion-key-files-variant-files)
 
 [Program Output](#program-output)
 
@@ -44,7 +44,7 @@ INSTALL file.
 looks for these in the directory `variant_position_files`, however this can be 
 changed with the ``--key-dir`` option.
 3. Add the conversion files to this directory.
-4. change directories to the `sample_files` directory and execute the 
+4. Change directories to the `sample_files` directory and execute the 
 `sample_conversions.sh` script:
 `./sample_conversions.sh`
 
@@ -284,7 +284,7 @@ any other format).
  - The AB format does not discriminate between SNPs and indels 
 
 
-## Variant files
+## Genotype conversion key files (Variant Files)
 
 Variant files contain conversion information for the markers in each SNP panel, 
 which is specific to the genomic assembly. Variant files should be placed in 
