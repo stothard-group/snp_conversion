@@ -89,7 +89,7 @@ format_group.add_argument(
     action="store_true",
     default=False,
     required=False,
-    help="[optional] Write output to both STDOUT and log file"
+    help="[optional] Write progress messages to an output *-[timestamp].log file"
 
 )
 format_group.add_argument(
