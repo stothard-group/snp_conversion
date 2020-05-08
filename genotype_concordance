@@ -225,7 +225,29 @@ def check_input_snp_panel(snp_panel, file_name, file_type, variant_files, assemb
                 logfile_text = "Parsing " + file_type + " file"
                 log_array.append(logfile_text)
                 illumina_data_df.rename(columns={'Unnamed: 0': 'SNP Name'}, inplace=True)
-                panel_dataframe = illumina_data_df
+                if file_type != 'PLUS':
+                    converting_file = False
+                    var_list, log_text, alt_bool = vff.var_match(variant_files, variant_directory, illumina_data_df,
+                                                                 file_name, converting_file, assembly, species)
+                    for text in log_text:
+                        log_array.append(text)
+                    var_df = vff.get_var_df(variant_directory, var_list[0], assembly, species, alt_bool)
+                    matrix_type = file_type
+                    output_type = "PLUS"
+                    converted_df, column_names, logfile = fc.split_and_convert(illumina_data_df, var_df, matrix_type,
+                                                                             output_type, can_we_thread, n_threads,
+                                                                             file_name, logfile)
+                    # Reorder converted dataframe to match the original order of samples and snp names
+                    specified_out = "PLUS"
+                    reordered_df, logfile = fc.reorder_converted_df(converted_df, column_names, illumina_data_df, specified_out,
+                                                                  output_type, file_name, logfile)
+                    reordered_df.rename({'': 'Name'}, axis=1, inplace=True)
+                    panel_dataframe = reordered_df
+                else:
+                    illumina_data_df.rename({'': 'Name'}, axis=1, inplace=True)
+                    panel_dataframe = illumina_data_df
+
+
                 # add .1 values to this dict as the rest of the script depends on them
             else:
                 # make a dict containing the innards of the Long file and pass PLUS df to panel_dataframe, if it exists
@@ -248,18 +270,21 @@ def check_input_snp_panel(snp_panel, file_name, file_type, variant_files, assemb
         log_array.append(text)
     var_df = vff.get_var_df(variant_directory, var_list[0], assembly, species, alt_bool)
     #  Check if PLUS format exists, and if not, convert long fwd format to plus (or whatever format exists)
-    if file_type == 'LONG':
-        if 'PLUS' not in long_file_df_dict:
-            # make PLUS dataframe # SHOVE FILE INTO FILE CONVERSION AND CONVERT TO PLUS FORMAT
-            # use long_as_matrix
-            df_for_conversion, matrix_type, logfile = fc.long_as_matrix(illumina_data_df, file_name, logfile)
-            out_type_for_long = 'PLUS'
-            converted_df, column_names, logfile = fc.split_and_convert(df_for_conversion, var_df, matrix_type, out_type_for_long, can_we_thread, n_threads, file_name, logfile)
-            reordered_df, logfile = fc.reorder_converted_df(converted_df, column_names, illumina_data_df, out_type_for_long, out_type_for_long, file_name, logfile)
-            reordered_df.rename({'': 'Name'}, axis=1, inplace=True)
-            panel_dataframe = reordered_df
+    if affy_flag is False:
+        if file_type == 'LONG':
+            if 'PLUS' not in long_file_df_dict:
+                # make PLUS dataframe # SHOVE FILE INTO FILE CONVERSION AND CONVERT TO PLUS FORMAT
+                # use long_as_matrix
+                df_for_conversion, matrix_type, logfile = fc.long_as_matrix(illumina_data_df, file_name, logfile)
+                out_type_for_long = 'PLUS'
+                converted_df, column_names, logfile = fc.split_and_convert(df_for_conversion, var_df, matrix_type, out_type_for_long, can_we_thread, n_threads, file_name, logfile)
+                reordered_df, logfile = fc.reorder_converted_df(converted_df, column_names, illumina_data_df, out_type_for_long, out_type_for_long, file_name, logfile)
+                reordered_df.rename({'': 'Name'}, axis=1, inplace=True)
+                panel_dataframe = reordered_df
+        else:
+            pass
     # Convert affymetrix file to AFFY-PLUS
-    if affy_flag is True:
+    else:
         matrix_type = 'FWD'
         converted_df, column_names, logfile = fc.split_and_convert(panel_dataframe, var_df, matrix_type, 'PLUS', can_we_thread, n_threads, file_name, logfile)
         reordered_df, logfile = fc.reorder_converted_df(converted_df, column_names, panel_dataframe, 'FWD',

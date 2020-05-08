@@ -33,9 +33,7 @@ README sections
 
 [Extracting Discordant Positions](#extracting-discordant-positions)
 
-[Multi-threading](#multi-threading)
-
-[Verbose Logging](#verbose-logging)
+[Special Options](#special-options)
 
 [Example Commands](#example-commands)
 
@@ -300,7 +298,9 @@ which will write to a file prefixed with the SNP panel name, followed by
 5. Genotype in the VCF file
 6. Genotype in the SNP panel
 
-## Multi-threading
+## Special Options
+
+### Multi-threading
 
 Some portions of the program can make use of multiple cores on Unix systems 
 (Linux, Macintosh, and WSL - Windows Subsystem for Linux). This behaviour can be
@@ -308,7 +308,7 @@ controlled using the `--threads` option. On these systems, the default is 2
 threads, but more threads can be specified. Unfortunately, threading is not 
 supported on Windows machines. 
 
-## Verbose logging
+### Verbose logging
 
 The `--verbose-logging` flag will write progress and error messages to a log 
 file, which takes the name of the SNP panel file as a prefix, followed by a 

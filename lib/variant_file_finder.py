@@ -185,9 +185,9 @@ def var_match(var_files, var_dir, file_df, input_file, converting_file, assembly
         alt_var_len = len(alt_marker_names_reduced)
 
         # Get SNP panel marker names
-        if 'Name' in file_df:
+        if 'Name' in file_df.columns:
             input_names = file_df['Name'].to_list()
-        elif 'SNP Name' in file_df:
+        elif 'SNP Name' in file_df.columns:
             input_names = file_df['SNP Name'].to_list()
         else:
             input_names = []
