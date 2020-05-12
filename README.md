@@ -43,7 +43,9 @@ INSTALL file.
 2. Create a directory to store the conversion files. By default, the program 
 looks for these in the directory `variant_position_files`, however this can be 
 changed with the ``--key-dir`` option.
-3. Add the conversion files to this directory.
+3. Generate conversion files using the Nextflow workflow found in the 
+Genotype Conversion File Builder repository at 
+https://github.com/stothard-group/genotype_conversion_file_builder
 4. Change directories to the `sample_files` directory and execute the 
 `sample_conversions.sh` script:
 `./sample_conversions.sh`
@@ -306,7 +308,10 @@ which is specific to the genomic assembly. Variant files should be placed in
 the directory `variant_position_files/[species]/[assembly]/`. A different 
 variant file directory can be specified, but it must preserve the 
 `[dir]/[species]/[assembly]/` structure. Please store the variant files, 
-and only the variant files, in their own directory.
+and only the variant files, in their own directory.These files can be generated 
+using the Nextflow workflow found in the Genotype Conversion File Builder 
+repository at 
+https://github.com/stothard-group/genotype_conversion_file_builder
 
 **To get a list of available species and assembly names:**
 `./snp_conversion conversion_list [--key-dir]`
