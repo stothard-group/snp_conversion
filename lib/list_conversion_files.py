@@ -26,4 +26,3 @@ def list_conversion_files(var_dir):
         for values in conversion_dict[key]:
             print("""    - {}""".format(values))
     return conversion_dict
-

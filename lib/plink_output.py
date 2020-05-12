@@ -17,13 +17,15 @@ def create_ped_file(output_file_basename, snp_panel_genotypes, logfile):
     :return: PED file written
     """
     ped_output_name = output_file_basename + ".ped"
-    transposed_file = snp_panel_genotypes.set_index('Name').T
+    transposed_file = snp_panel_genotypes.set_index("Name").T
     genotype_columns = list(transposed_file.columns)
     for column in genotype_columns:
         a_column = column + "_A"
         b_column = column + "_B"
-        transposed_file['{}'.format(a_column)], transposed_file['{}'.format(b_column)] = \
-            zip(*transposed_file[column].apply(lambda x: list(x)))
+        (
+            transposed_file["{}".format(a_column)],
+            transposed_file["{}".format(b_column)],
+        ) = zip(*transposed_file[column].apply(lambda x: list(x)))
     transposed_file.drop(columns=genotype_columns, inplace=True)
     transposed_file.replace({"-": "0"}, inplace=True)
     transposed_file.to_csv(ped_output_name, sep=" ", header=False)
@@ -80,8 +82,22 @@ def create_map_file(output_file_basename, snp_panel_df, var_df, species, logfile
     # Get var df containing only panel data
     snp_panel_name = snp_panel_df["Name"].tolist()
     var_subset = var_df[var_df["Name"].isin(snp_panel_name)].copy()
-    var_subset.drop(columns=["SNP", "BLAST_strand", "Reference_allele_forward_strand", "DESIGN_A", "DESIGN_B",
-                             "FORWARD_A", "FORWARD_B", "PLUS_A", "PLUS_B", "TOP_A", "TOP_B"], inplace=True)
+    var_subset.drop(
+        columns=[
+            "SNP",
+            "BLAST_strand",
+            "Reference_allele_forward_strand",
+            "DESIGN_A",
+            "DESIGN_B",
+            "FORWARD_A",
+            "FORWARD_B",
+            "PLUS_A",
+            "PLUS_B",
+            "TOP_A",
+            "TOP_B",
+        ],
+        inplace=True,
+    )
     # get new chromosome information
     replace_vals = chromosome_replace(species, var_subset)
 
@@ -91,7 +107,9 @@ def create_map_file(output_file_basename, snp_panel_df, var_df, species, logfile
         var_chr_replaced = var_subset.copy()
     output_df = var_chr_replaced[["BLAST_chromosome", "Name", "BLAST_position"]].copy()
     output_df["Genetic_distance"] = "0"
-    output_df = output_df[["BLAST_chromosome", "Name", "Genetic_distance", "BLAST_position"]]
+    output_df = output_df[
+        ["BLAST_chromosome", "Name", "Genetic_distance", "BLAST_position"]
+    ]
     convert_dict = {"BLAST_position": "int64"}
     output_df2 = output_df.astype(convert_dict)
     output_df2.to_csv(map_output_name, sep=" ", header=False, index=False)

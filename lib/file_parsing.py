@@ -32,7 +32,7 @@ def determine_header_structure(file):
 def parse_header(file):
     does_header_exist = determine_header_structure(file)
     if does_header_exist is True:
-        with open(file, 'r') as input_file:
+        with open(file, "r") as input_file:
             header_dict = {}
             count = 1
             header_skip = 0
@@ -44,18 +44,22 @@ def parse_header(file):
                     if not line.startswith("[Header]"):
                         line = line.rstrip("\n")
                         line_array = line.split("\t")
-                        if line_array[0] == 'Content':
+                        if line_array[0] == "Content":
                             header_dict.update({line_array[0]: line_array[2]})
                         else:
                             header_dict.update({line_array[0]: line_array[1]})
                     count = count + 1
         input_file.close()
     else:
-        print("[Header]...[Data]... file structure not detected. Assuming first line contains data column names")
+        print(
+            "[Header]...[Data]... file structure not detected. Assuming first line contains data column names"
+        )
         header_skip = 0
         header_dict = {}
     if does_header_exist is True and header_skip == 0:
-        print("[Header]...[Data]... file structure not detected. Assuming first line contains data column names")
+        print(
+            "[Header]...[Data]... file structure not detected. Assuming first line contains data column names"
+        )
     else:
         pass
     return header_skip, header_dict
@@ -68,8 +72,8 @@ magic_dict = {
     "\x42\x5a\x68": "bz2",
     "\x50\x4b\x03\x04": "zip",
     "\x53\x70\x5f": "tar",
-    "\x75\x73\x74\x61\x62": "tar"
-    }
+    "\x75\x73\x74\x61\x62": "tar",
+}
 
 max_len = max(len(x) for x in magic_dict)
 
@@ -94,8 +98,10 @@ def get_uncompressed_file(path):
         if path.endswith((".gzip", ".gz", ".bz2", ".zip", ".xz")):
             # compressed but with tar
             if path.endswith(".tar.gz"):
-                warnings.warn("tar compressed files are not allowed - un-tar and compress using gzip, zip, bzip2,or xz",
-                              stacklevel=4)
+                warnings.warn(
+                    "tar compressed files are not allowed - un-tar and compress using gzip, zip, bzip2,or xz",
+                    stacklevel=4,
+                )
                 filetype = "skip_file"
             # file has an acceptable file extension, test for compression type
             else:
@@ -107,25 +113,41 @@ def get_uncompressed_file(path):
                 elif compression_type == "zip" and path.endswith(".zip"):
                     filetype = "zip"
                 elif compression_type == "tar":
-                    warnings.warn("File " + path + " may be compressed with tar - skipping")
+                    warnings.warn(
+                        "File " + path + " may be compressed with tar - skipping"
+                    )
                     filetype = "skip_file"
                 elif compression_type == "xz" and path.endswith(".xz"):
                     filetype = "xz"
                 else:
                     filetype = compression_type
-                    warnings.warn("File extension may not match determined compression type " + compression_type,
-                                  stacklevel=4)
+                    warnings.warn(
+                        "File extension may not match determined compression type "
+                        + compression_type,
+                        stacklevel=4,
+                    )
         # potentially compressed but does not have an expected extension
         else:
-            warnings.warn(path + " does not have a recognized file extension", stacklevel=4)
+            warnings.warn(
+                path + " does not have a recognized file extension", stacklevel=4
+            )
             # compression type might be identified by magic number
             if compression_type != "no match":
-                warnings.warn("File " + path + " may be in " + compression_type + " format - uncompressing",
-                              stacklevel=4)
+                warnings.warn(
+                    "File "
+                    + path
+                    + " may be in "
+                    + compression_type
+                    + " format - uncompressing",
+                    stacklevel=4,
+                )
                 filetype = compression_type
             # compression type cannot be identified by magic number; may not be compressed, may be corrupted, etc.
             else:
-                warnings.warn("File type for " + path + " cannot be determined - skipping", stacklevel=4)
+                warnings.warn(
+                    "File type for " + path + " cannot be determined - skipping",
+                    stacklevel=4,
+                )
                 filetype = "skip_file"
     return filetype
 
@@ -139,17 +161,21 @@ def uncompressing(path):
     elif filetype == "gzip":
         with gzip.open(path, "rt", errors="ignore") as gzipped_handle:
             return parse_vars(gzipped_handle)
-    elif filetype == 'bz2':
+    elif filetype == "bz2":
         with bz2.open(path, "rt", errors="ignore") as bzipped_handle:
             return parse_vars(bzipped_handle)
     elif filetype == "zip":
-        with ZipFile(path, mode='r', allowZip64=True) as zipped_file:
+        with ZipFile(path, mode="r", allowZip64=True) as zipped_file:
             zip_list = ZipFile.namelist(zipped_file)
             if len(zip_list) != 1:
-                warnings.warn("Zipped archive " + path + " contains more than one file.")
+                warnings.warn(
+                    "Zipped archive " + path + " contains more than one file."
+                )
             else:
-                with zipped_file.open(zip_list[0], mode='r') as zipped_handle:
-                    items_file = io.TextIOWrapper(zipped_handle, encoding='UTF-8', newline='')
+                with zipped_file.open(zip_list[0], mode="r") as zipped_handle:
+                    items_file = io.TextIOWrapper(
+                        zipped_handle, encoding="UTF-8", newline=""
+                    )
                     return parse_vars(items_file)
     else:
         pass
@@ -157,13 +183,15 @@ def uncompressing(path):
 
 def check_header_data_congruency(header_dict, calc_num_samples, calc_num_snps):
     warning_message_list = []
-    if int(header_dict['Num Samples']) != calc_num_samples:
+    if int(header_dict["Num Samples"]) != calc_num_samples:
         message = "Inconsistent number of samples in input file based on 'Num Samples' in header"
         warning_message_list.append(message)
     else:
         pass
-    if int(header_dict['Num SNPs']) != calc_num_snps:
-        message = "Inconsistent number of SNPs in input file based on 'Num SNPs' in header"
+    if int(header_dict["Num SNPs"]) != calc_num_snps:
+        message = (
+            "Inconsistent number of SNPs in input file based on 'Num SNPs' in header"
+        )
         warning_message_list.append(message)
     else:
         pass

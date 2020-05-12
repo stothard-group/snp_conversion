@@ -22,7 +22,9 @@ def get_logname(suffix, input_file):
     return log_name
 
 
-def inconsistent_values_homozygous(in_file, log_exists, user_allele, var_alleles, index, col0):
+def inconsistent_values_homozygous(
+    in_file, log_exists, user_allele, var_alleles, index, col0
+):
     """
     Writes log file for inconsistent values that are HOMOZYGOUS
     :param in_file: input file name
@@ -41,7 +43,7 @@ def inconsistent_values_homozygous(in_file, log_exists, user_allele, var_alleles
         log_suffix = "-" + timestr + ".log"
         log_file_name = get_logname(log_suffix, in_file)
     if not os.path.exists(log_file_name):
-        with open(log_file_name, 'a+') as log_write_header:
+        with open(log_file_name, "a+") as log_write_header:
             log_write_header.write("Inconsistent values:\n")
             header_string = "Sample\tName\tUser Input\tConversion Key\n"
             log_write_header.write(header_string)
@@ -51,7 +53,7 @@ def inconsistent_values_homozygous(in_file, log_exists, user_allele, var_alleles
     expected_out = var_alleles[0] + " or " + var_alleles[1]
     output_list = [col0, index, user_allele, expected_out]
     output_string = "\t".join(output_list)
-    with open(log_file_name, 'a+') as log_output:
+    with open(log_file_name, "a+") as log_output:
         log_output.write(output_string + "\n")
     log_output.close()
     return log_file_name
@@ -75,7 +77,7 @@ def inconsistent_values(var_df, sample, user_df, in_file, log_exists):
         log_suffix = "-" + timestr + ".log"
         log_file_name = get_logname(log_suffix, in_file)
     if not os.path.exists(log_file_name):
-        with open(log_file_name, 'a+') as log_write_header:
+        with open(log_file_name, "a+") as log_write_header:
             log_write_header.write("Inconsistent values:\n")
             header_string = "Sample\tName\tUser Input\tConversion Key\n"
             log_write_header.write(header_string)
@@ -89,30 +91,58 @@ def inconsistent_values(var_df, sample, user_df, in_file, log_exists):
     output_array.pop()
     output_array.insert(0, sample)
     # get user values
-    user_values = user_df[user_df['Name'] == output_array[1]]
+    user_values = user_df[user_df["Name"] == output_array[1]]
     user_list = user_values.values.tolist().pop(0)
-    acceptable_alleles = ['A', 'T', 'G', 'C', 'I', 'D', '-']
+    acceptable_alleles = ["A", "T", "G", "C", "I", "D", "-"]
     # check that we have acceptable alleles
     if user_list[1] not in acceptable_alleles:
         if log_exists is None:
             os.remove(log_file_name)
         else:
-            with open(log_file_name, 'a+') as log_out:
-                log_out.write("Unexpected allele " + user_list[1] + " for " + output_array[1] + " in sample " + output_array[0])
+            with open(log_file_name, "a+") as log_out:
+                log_out.write(
+                    "Unexpected allele "
+                    + user_list[1]
+                    + " for "
+                    + output_array[1]
+                    + " in sample "
+                    + output_array[0]
+                )
             log_out.close()
-        exit("Unexpected allele " + user_list[1] + " for " + output_array[1] + " in sample " + output_array[0])
+        exit(
+            "Unexpected allele "
+            + user_list[1]
+            + " for "
+            + output_array[1]
+            + " in sample "
+            + output_array[0]
+        )
     elif user_list[2] not in acceptable_alleles:
         if log_exists is None:
             os.remove(log_file_name)
         else:
-            with open(log_file_name, 'a+') as log_out:
-                log_out.write("Unexpected allele " + user_list[1] + " for " + output_array[1] + " in sample " + output_array[0])
+            with open(log_file_name, "a+") as log_out:
+                log_out.write(
+                    "Unexpected allele "
+                    + user_list[1]
+                    + " for "
+                    + output_array[1]
+                    + " in sample "
+                    + output_array[0]
+                )
             log_out.close()
-        exit("Unexpected allele " + user_list[2] + " for " + output_array[1] + " in sample " + output_array[0])
+        exit(
+            "Unexpected allele "
+            + user_list[2]
+            + " for "
+            + output_array[1]
+            + " in sample "
+            + output_array[0]
+        )
     else:
         pass
     # find the incorrect value and make list to write to output
-    with open(log_file_name, 'a+') as log_output:
+    with open(log_file_name, "a+") as log_output:
         if user_list[1] == output_array[2] or user_list[1] == output_array[3]:
             pass
         else:
@@ -148,21 +178,21 @@ def long_inequivalency(in_file, log_exists, inequiv_info):
         log_suffix = "-" + timestr + ".log"
         log_file_name = get_logname(log_suffix, in_file)
     if not os.path.exists(log_file_name):
-        with open(log_file_name, 'a+') as log_write_header:
+        with open(log_file_name, "a+") as log_write_header:
             log_write_header.write("Inequivalent values:\n")
         log_write_header.close()
     else:
-        with open(log_file_name, 'a+') as log_write_header:
+        with open(log_file_name, "a+") as log_write_header:
             log_write_header.write("\nInequivalent values:\n")
         log_write_header.close()
     # Get reformat inequiv dict and write to log file
     inequiv_df = pd.DataFrame()
     for key in inequiv_info:
         inequiv_df = pd.concat([inequiv_df, inequiv_info[key].to_frame().T], sort=False)
-    inequiv_df.index.name = 'SNP Name'
+    inequiv_df.index.name = "SNP Name"
     inequiv_df.reset_index(inplace=True)
-    with open(log_file_name, 'a+') as log_output:
-        inequiv_df.to_csv(log_output, sep='\t', index=False)
+    with open(log_file_name, "a+") as log_output:
+        inequiv_df.to_csv(log_output, sep="\t", index=False)
         log_output.close()
     return log_file_name
 
@@ -184,7 +214,7 @@ def ab_warning(dataframe, new_df, filename, log_name):
         log_file_name = get_logname(log_suffix, filename)
     # check if file exists and write header if it doesn't
     if not os.path.exists(log_file_name):
-        with open(log_file_name, 'a+') as log_write_header:
+        with open(log_file_name, "a+") as log_write_header:
             log_write_header.write("Inconsistent values:\n")
             header_string = "Sample\tName\tUser Input\n"
             log_write_header.write(header_string)
@@ -193,9 +223,9 @@ def ab_warning(dataframe, new_df, filename, log_name):
         pass
     # Get lines that do not match AB format
     cols = list(dataframe)
-    ab_list = ['AA', 'AB', 'BB', '--']
-    cols.remove('Name')
-    with open(log_file_name, 'a+') as ab_log:
+    ab_list = ["AA", "AB", "BB", "--"]
+    cols.remove("Name")
+    with open(log_file_name, "a+") as ab_log:
         for col in cols:
             sample_index = dataframe.columns.get_loc(col)
             res = dataframe[new_df[col]]
@@ -231,9 +261,7 @@ def simple_log(message, input_file, log_name):
         log_file_name = get_logname(log_suffix, input_file)
     message_text = "\n".join(message)
     message_text = message_text + "\n"
-    with open(log_file_name, 'a+') as simple:
+    with open(log_file_name, "a+") as simple:
         simple.write(message_text)
     simple.close()
     return log_file_name
-
-

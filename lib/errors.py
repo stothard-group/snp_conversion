@@ -2,6 +2,7 @@
 import os
 import warnings
 from zipfile import ZipFile
+
 # This file contains functions for common errors that can be checked (e.g. correct input file names, etc.)
 
 
@@ -63,15 +64,23 @@ def non_csv_fmt_conversion_files(key_dir, assembly_name, species):
         file_split = file.split(".")
         if "conversion" == file_split[2]:
             if assembly_name == file_split[1]:
-                if file.endswith(('.csv', '.csv.gz', '.csv.zip', '.csv.bz2', '.csv.xz')):
+                if file.endswith(
+                    (".csv", ".csv.gz", ".csv.zip", ".csv.bz2", ".csv.xz")
+                ):
                     # special zipfile check - should only contain 1 archive
-                    if file.endswith('.zip'):
+                    if file.endswith(".zip"):
                         full_file_name = os.path.join(key_dir, file)
-                        with ZipFile(full_file_name, mode='r', allowZip64=True) as zipped_file:
+                        with ZipFile(
+                            full_file_name, mode="r", allowZip64=True
+                        ) as zipped_file:
                             zip_list = ZipFile.namelist(zipped_file)
                             if len(zip_list) != 1:
-                                warnings.warn("Zipped archive " + file +
-                                              " contains more than one file - skipping", stacklevel=4)
+                                warnings.warn(
+                                    "Zipped archive "
+                                    + file
+                                    + " contains more than one file - skipping",
+                                    stacklevel=4,
+                                )
                                 variant_exclude_list.append(file)
                             else:
                                 pass
@@ -79,9 +88,12 @@ def non_csv_fmt_conversion_files(key_dir, assembly_name, species):
                         pass
                 else:
                     # Check for any tar archives
-                    if file.endswith(('.csv.tar.gz', '.csv.tar.bz2')):
-                        warnings.warn("Only the following compression types are supported: gzip, bz2, and zip. "
-                                      "Unpack tar archive as tar files are not supported.", stacklevel=4)
+                    if file.endswith((".csv.tar.gz", ".csv.tar.bz2")):
+                        warnings.warn(
+                            "Only the following compression types are supported: gzip, bz2, and zip. "
+                            "Unpack tar archive as tar files are not supported.",
+                            stacklevel=4,
+                        )
                     variant_exclude_list.append(file)
             else:
                 pass
