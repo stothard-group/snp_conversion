@@ -153,19 +153,19 @@ SNP panel file.
 Variant files contain strand format information for the markers in each panel, 
 which is specific to the genomic assembly. These files are required for format 
 checking and conversion prior to the concordance analysis. The assembly name 
-and species information must therefore be specified when running `check_format` 
-and `convert_file` utilities using the `--assembly` and `--species` options, 
-respectively. SNP conversion utilities will detect the matching or best-matching 
+and species information must therefore be specified when 
+running genotype_conversion using the `--assembly` and `--species` options, 
+respectively. The program will detect the matching or best-matching 
 variant file. The filename for all variant files will have the structure 
 `[panel name].[assembly].[conversion|position].csv[.gz]`. Ideally, the user 
 input file will contain all the markers present in a single variant file, and 
 this file will be used in format checking. 
 
 If there is not an exact match between the user input markers and those in the 
-variant file, Genotype Concordance modules will select the file that contains 
+variant file, Genotype Concordance utilities will select the file that contains 
 all matching markers, with the fewest additional ones. If there are markers in 
-the user input file that are not found in the best-matching variant file, SNP 
-conversion will exit and print the orphan markers to the file 
+the user input file that are not found in the best-matching variant file, the 
+program will exit and print the orphan markers to the file 
 `[snp panel basename]_problem_variants.txt`.
 
 Variant files should be placed in the directory 
