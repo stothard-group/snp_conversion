@@ -1717,14 +1717,13 @@ if __name__ == "__main__":
         "--assembly",
         type=str,
         required=True,
-        help="Assembly name which must be included in genotype conversion file name"
+        help="Assembly name (see README for all available choices)"
     )
     parser.add_argument(
         '--species',
         required=True,
         type=str,
-        choices=["bos_taurus", "sus_scrofa"],
-        help="Organism name"
+        help="Species name (see README for all available choices)"
     )
     parser.add_argument(
         "--filter-vcf",

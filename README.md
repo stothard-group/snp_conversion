@@ -99,12 +99,23 @@ usage: ./snp_conversion merge_files [-h] --input-dir INPUT_DIR
 the following arguments are required: --output-name, --input-format
 ```
 
+### Usage to print the list of available species and assembly names:
+```
+usage: ./snp_conversion conversion_list [-h] [--key-dir KEY_DIR]
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --key-dir KEY_DIR  Directory containing genotype conversion key files
+                     (default directory: variant_position_files)
+```
+
 ## Program options
 
 ### General options:
 ```
   --input-dir INPUT_DIR
-                        directory containing input file(s) (default: current directory)
+                        directory containing input file(s) (default directory:
+                        current working directory)
   --file-list FILE_LIST
                         [optional] comma-separated list of files in the input
                         directory to be converted (no whitespace)
@@ -112,9 +123,6 @@ the following arguments are required: --output-name, --input-format
                         Type of file(s) expected: 'TOP', 'FWD', 'AB', 'LONG',
                         'DESIGN', 'PLUS', 'mixed', or 'affymetrix'. 'mixed'
                         may not be used when merging files.
-  -v, --verbose-logging
-                        [optional] Write progress messages to an output 
-                        *-[timestamp].log file
 ```
 #### Check format options:
 ```
@@ -122,9 +130,10 @@ the following arguments are required: --output-name, --input-format
                         key files contain all SNPs in the input
   --key-dir KEY_DIR     Directory containing genotype conversion key files
                         (default directory: variant_position_files)
-  --assembly ASSEMBLY   Assembly name - see README for full list of choices
-  --species {bos_taurus,sus_scrofa}
-                        Organism name
+  --assembly ASSEMBLY   Assembly name (use conversion_list utility to see all 
+  						available choices)
+  --species				Species name (use conversion_list utility to see all 
+  						available choices)
   -s, --summary         Summarize converted SNP file in *_summary.txt file
   --tabular TABULAR     Output summary file in tabular format (default: True)
   --plink               Creates PLINK flat files (PED and MAP) (default: False)
@@ -148,9 +157,10 @@ the following arguments are required: --output-name, --input-format
                         (default = 2). This option will be ignored on Windows 
                         systems.
   -s, --summary         Summarize converted SNP file in *_summary.txt file
-  --assembly ASSEMBLY   Assembly name - see README for full list of choices
-  --species {bos_taurus,sus_scrofa}
-                        Organism name
+  --assembly ASSEMBLY   Assembly name (use conversion_list utility to see all 
+  						available choices)
+  --species				Organism name (use conversion_list utility to see all 
+  						available choices)
   --key-dir KEY_DIR     Directory containing genotype conversion key files
                         (default directory: variant_position_files)
   --tabular TABULAR     Output summary file in tabular format (default: True)
@@ -163,6 +173,11 @@ the following arguments are required: --output-name, --input-format
   --output-name OUTPUT_NAME
                         Name of merged file
 
+```
+#### Conversion list options:
+```
+  --key-dir KEY_DIR  Directory containing genotype conversion key files
+                     (default directory: variant_position_files)
 ```
 
 ## Special Options
@@ -293,15 +308,10 @@ variant file directory can be specified, but it must preserve the
 `[dir]/[species]/[assembly]/` structure. Please store the variant files, 
 and only the variant files, in their own directory.
 
-Current acceptable assemblies listed by species are:
-- bos_taurus
-	- UMD3_1_chromosomes
-	- ARS-UCD1_2_Btau5_0_1Y
-- sus_scrofa
-	- sscrofa11_1
-	- sscrofa10_2
-	- USMARCv1_0
+**To get a list of available species and assembly names:**
+`./snp_conversion conversion_list [--key-dir]`
 
+The `--key-dir` value is optional (default: variant_position_files)
  
  The assembly name and species must therefore be specified when running 
 `check_format` and `convert_file` utilities using the `--assembly` and 

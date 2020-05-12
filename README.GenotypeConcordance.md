@@ -174,6 +174,11 @@ directory can be specified, but it must preserve the
 `[dir]/[species]/[assembly]/` structure. Please store the variant files, and 
 only the variant files, in their own directory.
 
+**To get a list of available species and assembly names:**
+`./snp_conversion conversion_list [--key-dir]`
+
+The `--key-dir` value is optional (default: variant_position_files)
+ 
 The variant file headers (indicated by lines beginning with '#') contain more 
 information about variant file structure. 
 

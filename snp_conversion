@@ -5,6 +5,7 @@ import os
 import lib.file_format_checker as ffc
 import lib.file_conversion as convert
 import lib.merge_snp_files as merge
+from lib.list_conversion_files import list_conversion_files as list_var_files
 
 # Get cwd for --input-dir
 cwd = os.getcwd()
@@ -12,8 +13,8 @@ cwd = os.getcwd()
 
 parent_parser = argparse.ArgumentParser(add_help=False, description="Converts between Illumina matrix and long formats")
 parser = argparse.ArgumentParser(add_help=True, description="Converts between Illumina matrix and long formats. To see "
-                                                            "the full usage for each function:  "
-                                                            "python SNP_conversion.py [Function] --help")
+                                                            "the full usage for each Utility:  "
+                                                            "./snp_convserion [Utility] --help")
 
 
 # Make general options
@@ -23,7 +24,7 @@ general_group.add_argument(
     type=str,
     required=False,
     default=cwd,
-    help="directory containing input file(s) (default directory: ./)"
+    help="directory containing input file(s) (default directory: current working directory)"
 )
 general_group.add_argument(
     "--file-list",
@@ -39,7 +40,7 @@ general_group.add_argument(
          "'mixed' may not be used when merging files."
 )
 
-## Parsers for the 3 programs
+## Parsers for the 4 programs
 subs = parser.add_subparsers(dest='command')
 subs.metavar = 'Functions'
 sub_a = subs.add_parser(
@@ -57,6 +58,17 @@ sub_c = subs.add_parser(
     'merge_files',
     parents=[parent_parser],
     help="Merges files of the same format"
+)
+
+sub_d = subs.add_parser(
+    'conversion_list',
+    help="Lists all species and assembly names available"
+)
+sub_d.add_argument(
+    '--key-dir',
+    type=str,
+    default="variant_position_files",
+    help="Directory containing genotype conversion key files (default directory: variant_position_files)"
 )
 
 ## Function-specific options
@@ -80,8 +92,7 @@ format_group.add_argument(
     '--species',
     required=True,
     type=str,
-    choices=["bos_taurus", "sus_scrofa"],
-    help="Organism name"
+    help="Species name (see README for all available choices)"
 )
 format_group.add_argument(
     '-v',
@@ -96,7 +107,7 @@ format_group.add_argument(
     '--assembly',
     type=str,
     required=True,
-    help="Assembly name - see README for full list of choices"
+    help="Assembly name (see README for all available choices)"
 )
 
 format_group.add_argument(
@@ -175,8 +186,7 @@ conversion_group.add_argument(
     '--species',
     required=True,
     type=str,
-    choices=["bos_taurus", "sus_scrofa"],
-    help="Organism name"
+    help="Species name (see README for all available choices)"
 )
 conversion_group.add_argument(
     '--tabular',
@@ -218,12 +228,14 @@ if len(sys.argv) == 1:
     sys.exit(1)
 
 args = parser.parse_args()
-input_dir = args.input_dir
-
-if args.file_list is None:
-    file_list = os.listdir(input_dir)
+if args.command != "conversion_list":
+    input_dir = args.input_dir
+    if args.file_list is None:
+        file_list = os.listdir(input_dir)
+    else:
+        file_list = args.file_list
 else:
-    file_list = args.file_list
+    pass
 
 if args.command == 'convert_file':
     if args.input_format == 'AB':
@@ -248,6 +260,8 @@ elif args.command == 'merge_files':
         else:
             output = merge.merge_matrix_files(input_dir, args.file_list, args.input_format, args.output_name)
 
+elif args.command == 'conversion_list':
+    output = list_var_files(args.key_dir)
 else:
     pass
 
