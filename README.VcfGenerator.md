@@ -29,7 +29,7 @@ README Sections
 usage: vcf_generator [-h] --snp-panel SNP_PANEL
                      [--panel-type {TOP,FWD,AB,DESIGN,LONG,PLUS,affymetrix}]
                      [-v] [--key-dir KEY_DIR] --assembly ASSEMBLY --species
-                     {bos_taurus,sus_scrofa} [--output OUTPUT] [-t THREADS]
+                     SPECIES [--output OUTPUT] [-t THREADS]
                      [-c] [--discard-snp]
 
 Converts SNP panel file to VCF format file
@@ -46,10 +46,10 @@ optional arguments:
                         [optional] Write output to both STDOUT and log file
   --key-dir KEY_DIR     Directory containing genotype conversion key files
                         (default = variant_position_files)
-  --assembly ASSEMBLY   Assembly name which must be included in genotype
-                        conversion file name
-  --species {bos_taurus,sus_scrofa}
-                        Organism name
+  --assembly ASSEMBLY   Assembly name (use conversion_list utility to see all 
+  						available choices)
+  --species 			Species name (use conversion_list utility to see all 
+  						available choices)
   --output OUTPUT       Full output file name to store VCF results (default:
                         [input basename].vcf
   -t THREADS, --threads THREADS
@@ -91,14 +91,17 @@ options, respectively. The program will detect the matching or best-matching
 variant file. The filename for all variant files will have the structure 
 `[panel name].[assembly].[conversion|position].csv[.gz]`. Ideally, the user 
 input file will contain all the markers present in a single variant file, and 
-this file will be used in format checking. 
+this file will be used in format checking. These files can be generated 
+using the Nextflow workflow found in the Genotype Conversion File Builder 
+repository at 
+https://github.com/stothard-group/genotype_conversion_file_builder
 
 If there is not an exact match between the user input markers and those in the 
 variant file, the program will select the file that contains 
 all matching markers, with the fewest additional ones. If there are markers in 
 the user input file that are not found in the best-matching variant file, the 
 program will exit and print the orphan markers to the file 
-`[snp panel basename]_problem_variants.txt`.
+`[snp panel basename]_problem_variants.txt`. 
 
 Variant files should be placed in the directory 
 `variant_position_files/[species]/[assembly]/`. A different variant file 
