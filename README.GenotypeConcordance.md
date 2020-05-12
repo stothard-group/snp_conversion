@@ -69,7 +69,7 @@ usage: ./genotype_concordance  [-h] --snp-panel SNP_PANEL --panel-type
                                {TOP,FWD,AB,PLUS,DESIGN,LONG,affymetrix}
                                --vcf-file VCF_FILE [--key-dir KEY_DIR]
                                --assembly ASSEMBLY
-                               --species {bos_taurus, sus_scrofa}
+                               --species SPECIES
                                [--filter-vcf]
                                [--qual QUAL] [--filter FILTER]
                                [--output OUTPUT]
@@ -93,9 +93,10 @@ The following arguments are required: --snp-panel, --panel-type, --vcf-file,
                         information
   --key-dir KEY_DIR     Directory containing genotype conversion key files
                         (default directory: variant_position_files)
-  --assembly ASSEMBLY   Assembly name - see README for full list of choices
-  --species {bos_taurus,sus_scrofa}
-                        Organism name
+  --assembly ASSEMBLY   Assembly name (use conversion_list utility to see all 
+  						available choices)
+  --species 			Species name (use conversion_list utility to see all 
+  						available choices)
   --filter-vcf          [Optional] Use this flag to specify that the VCF file
                         should be filtered on QUAL and/or FILTER values. Must
                         be used in conjunction with --qual and/or --filter

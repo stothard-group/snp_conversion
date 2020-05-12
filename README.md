@@ -65,7 +65,7 @@ usage: ./snp_conversion check_format [-h] [--input-dir INPUT_DIR]
                                       [--file-list FILE_LIST]
                                       [--input-format {TOP,FWD,AB,LONG,DESIGN,PLUS,mixed,affymetrix}]
                                       [--get-snp-panel] [--key-dir KEY_DIR]
-                                      --species {bos_taurus, sus_scrofa}
+                                      --species SPECIES
                                       [-v] --assembly ASSEMBLY [-s]
                                       [--tabular] [--plink]
 
@@ -82,7 +82,7 @@ usage: ./snp_conversion convert_file [-h] [--input-dir INPUT_DIR]
                                       {TOP,FWD,AB,PLUS,DESIGN,LONG,AFFY-PLUS}
                                       [--output-name OUTPUT_NAME] [-t THREADS]
                                       [-s] --assembly ASSEMBLY
-                                      --species {bos_taurus, sus_scrofa}
+                                      --species SPECIES
                                       [--key-dir KEY_DIR] [--tabular] [-v] [--plink]
 
 
