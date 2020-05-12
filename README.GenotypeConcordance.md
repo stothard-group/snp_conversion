@@ -51,18 +51,23 @@ changed with the ``--key-dir`` option.
 3. Generate conversion files using the Nextflow workflow found in the 
 Genotype Conversion File Builder repository at 
 https://github.com/stothard-group/genotype_conversion_file_builder
-4. Change directories to the `concordance_sample_files` directory and execute 
-the `sample_concordance.sh` script:
-`./sample_concordance.sh`
+4. Run the following command:
 
-The program is executed using several small datasets to test assess concordance 
-of an Illumina (LONG format) and Affymetrix dataset with a sample VCF file. 
-This script will move all output files into the directory 
-`concordance_sample_files/test_output/`, and compare these files with 
-the expected files in `concordance_sample_files/sample_output/`. If the files 
-are the same, the output `No differences found` is printed to the screen for 
-each comparison. A list of sample commands found in the script is given below in 
-[Example Commands](#example-commands), with a short explanation of each.
+```
+python ./genotype_concordance \
+--snp-panel concordance_sample_files/input_files/G_CCGP_affy_short_input.txt \
+--panel-type affymetrix \
+--vcf-file concordance_sample_files/input_files/SNPs_reduced_anon.vcf.gz 
+--species bos_taurus \
+--assembly ARS-UCD1_2_Btau5_0_1Y --extract-discordant \
+--output concordance_affy
+```
+
+This command will run a concordance analysis of an Affymetrix file and a 
+VCF file, outputting a list of discordant positions.
+
+A more extensive list of sample commands is given below in 
+[Example Commands](#example-commands).
 
 ## Usage
 

@@ -46,16 +46,22 @@ changed with the ``--key-dir`` option.
 3. Generate conversion files using the Nextflow workflow found in the 
 Genotype Conversion File Builder repository at 
 https://github.com/stothard-group/genotype_conversion_file_builder
-4. Change directories to the `sample_files` directory and execute the 
-`sample_conversions.sh` script:
-`./sample_conversions.sh`
+4. Run the following check_format command:
 
-The program is executed using several small datasets to test the check_format, 
-convert_file, and merge_files utilities. This script will move all output files 
-into the directory `sample_files/test_output/`, and compare these files with 
-the expected files in `sample_files/sample_output/`. If the files are the same, 
-the output `No differences found` is printed to the screen for each comparison. 
-A list of sample commands found in the script is given below in 
+```
+./snp_conversion check_format --input-dir sample_files/input_files \
+--file-list 50kv3_mTOP_14June2019.txt \
+--key-dir sample_files/variant_position_files \
+--assembly UMD3_1_chromosomes --species bos_taurus
+```
+
+This command will check the format of the file 50kv3_mTOP_14June2019.txt, and 
+print the following results to the screen:
+```
+File 50kv3_mTOP_14June2019.txt is correctly formatted in Illumina TOP format
+```
+
+A more extensive list of sample commands is given below in 
 [Example Commands](#example-commands), with a short explanation of each.
 
 ## Program Utilities
