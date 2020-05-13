@@ -162,8 +162,7 @@ optional arguments:
                      	: output)
   -t THREADS, --threads THREADS
                         [optional] Number of threads to use during conversion
-                        (default = 2). This option will be ignored on Windows 
-                        systems.
+                        (default = 2).
   -s, --summary         Summarize converted SNP file in *_summary.txt file
   --assembly ASSEMBLY   Assembly name (use conversion_list utility to see all 
   						available choices)
@@ -196,20 +195,6 @@ By default, 95% of markers in these input files must be correct for the script
 to make a prediction. However, this value can be changed by editing the 
 variable `minimum_correct_snp_fraction` at the top of `lib/check_format.py`.
 
-
-## Note for Windows Users
-
-This program can be used on Windows systems and on systems with Windows 
-Subsystem for Linux (WSL). **If you have WSL installed**, it is strongly 
-recommended that SNP Conversion is run in that partition (and the user input 
-files are also in that partition). This will allow for parallel processing of 
-input data and therefore faster program runtime.  **If WSL is not installed**, 
-you will not be able to run the `sample_conversion.sh` Bash script within the 
-`sample_files` directory. However, you will be able to run the sample commands 
-within that file (also found at the end of this README). You can compare the 
-output files from those commands with the contents of the corresponding files in 
-`sample_files/sample_output/`, as these should be identical, with the exception 
-of timestamps.
 
 ## Input Files
 

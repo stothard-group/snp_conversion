@@ -159,7 +159,7 @@ conversion_group.add_argument(
     type=int,
     default=2,
     required=False,
-    help="[optional] Number of threads to use during conversion (default = 2). This option will be ignored on Windows "
+    help="[optional] Number of threads to use during conversion (default = 2)"
     "systems",
 )
 conversion_group.add_argument(
