@@ -32,7 +32,7 @@ Use the `--user` flag for a local install.
 If you already have all the required dependencies listed below, you can simply
 run SNP Conversion or Genome Concordance with
 
-`python SNP_conversion.py` or `python genotype_concordance.py`
+`./snp_conversion` or `./genotype_concordance`
 
 
 
