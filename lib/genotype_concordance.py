@@ -3,20 +3,13 @@
 import os
 import lib.errors as errors
 import atexit
-import lib.make_logs as make_logs
-import warnings
-import lib.file_format_checker as ffc
-import lib.file_parsing as fp
+from lib.make_logs import simple_log, get_logname
 import pandas as pd
-from pandas.errors import ParserError
-import lib.variant_file_finder as vff
-import lib.file_conversion as fc
 import lib.common_vcf_libs as gt
 import allel
 import argparse
 import sys
 import time
-from functools import reduce
 import platform
 import concurrent.futures as cf
 import gzip
@@ -90,7 +83,7 @@ def gt_from_sample_columns(
         )
         print(message)
         log_array.append(message)
-        atexit.register(make_logs.simple_log, log_array, file_name, logfile)
+        atexit.register(simple_log, log_array, file_name, logfile)
         exit()
     reshaped = read_in_genotype["calldata/GT"].reshape(rows, columns)
     df = pd.DataFrame(reshaped)
@@ -116,7 +109,7 @@ def gt_from_sample_columns(
         message = "Something went wrong in extracting genotype data, potentially with scikit-allel"
         print(message)
         log_array.append(message)
-        atexit.register(make_logs.simple_log, log_array, file_name, logfile)
+        atexit.register(simple_log, log_array, file_name, logfile)
         exit()
     genotype_df.drop(columns=["FORMAT"], inplace=True)
     # genotype_df.to_csv("outfile_test.txt", sep='\t')
@@ -309,7 +302,7 @@ def get_genotypes_from_vcf(
     # Convert numeric genotypes to alleles
     subsampled_converted_df = numeric_to_allele_conversion(subsampled_gt_parsed_df)
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
+        logging = simple_log(log_array, file_name, logfile)
     return subsampled_converted_df, logfile
 
 
@@ -333,7 +326,7 @@ def check_filter_values(qual_val, filt_val, vcf_df, log_array, logfile, file_nam
         else:
             message = "QUAL filtering value must be a float or int"
             log_array.append(message)
-            atexit.register(make_logs.simple_log, log_array, file_name, logfile)
+            atexit.register(simple_log, log_array, file_name, logfile)
             exit()
 
     else:
@@ -345,7 +338,7 @@ def check_filter_values(qual_val, filt_val, vcf_df, log_array, logfile, file_nam
         if not filt_val_check:
             message = "One or more values for filtering from FILTER are not valid"
             log_array.append(message)
-            atexit.register(make_logs.simple_log, log_array, file_name, logfile)
+            atexit.register(simple_log, log_array, file_name, logfile)
             exit()
     else:
         pass
@@ -375,7 +368,7 @@ def handle_vcf_file(
                 "the data. Exiting..."
             )
             log_array.append(logfile_text)
-            atexit.register(make_logs.simple_log, log_array, file_name, logfile)
+            atexit.register(simple_log, log_array, file_name, logfile)
             exit()
     return vcf_header_count, missing_samples, kept_samples
 
@@ -484,7 +477,7 @@ def subsample_vcf_by_position(
     )
     subsampled_df = merged_vcf_panel_both[columns_to_use].copy()
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
+        logging = simple_log(log_array, file_name, logfile)
     return subsampled_df, vcf_to_df, missing_samples, vcf_pos_only, logfile
 
 
@@ -543,7 +536,7 @@ def quality_filtering(
     if len(panel_filtered.index) != len(vcf_filtered_qual_and_filter.index):
         message = "Quality filtering may not have been performed properly"
         log_array.append(message)
-        atexit.register(make_logs.simple_log, log_array, file_name, logfile)
+        atexit.register(simple_log, log_array, file_name, logfile)
         exit()
     return vcf_filtered_qual_and_filter, panel_filtered, num_filtered_pos
 
@@ -811,7 +804,7 @@ def compare_genotypes(
             return_dict.update({animal_name: result[animal_name]})
 
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
+        logging = simple_log(log_array, file_name, logfile)
     return return_dict, logfile
 
 
@@ -1328,7 +1321,7 @@ def generate_animal_stats(
         message = "Error determining the number of homozygous reference versus alt matching alleles"
         print(message)
         log_array.append(message)
-        atexit.register(make_logs.simple_log, log_array, file_name, logfile)
+        atexit.register(simple_log, log_array, file_name, logfile)
         exit()
 
     # Concordance statistics
@@ -1526,7 +1519,7 @@ User-directed filtering was applied, which removed {} positions.
     for each_animal in stats_per_animal_dict:
         output_stats_df[each_animal] = stats_per_animal_dict[each_animal]
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
+        logging = simple_log(log_array, file_name, logfile)
     return output_stats_df, logfile
 
 
@@ -1577,7 +1570,7 @@ def extract_discordant_positions(comparison_dict, logfile, file_name):
     disc_output_name = file_name.replace(".txt", "_discordant.txt")
     sorted_discordant.to_csv(disc_output_name, index=False, sep="\t")
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
+        logging = simple_log(log_array, file_name, logfile)
     return True, logfile
 
 
@@ -1720,7 +1713,7 @@ Discordant subtypes: percentage of Total discordant"""
         )
     additional_stat_out.close()
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
+        logging = simple_log(log_array, file_name, logfile)
     return True
 
 
@@ -1772,7 +1765,7 @@ def concordance_analysis(
     if verbose_logging:
         timestr = time.strftime("%Y%m%d%H%M%S")
         log_suffix = "-" + timestr + ".log"
-        log_input = make_logs.get_logname(log_suffix, snp_file)
+        log_input = get_logname(log_suffix, snp_file)
     else:
         log_input = None
 

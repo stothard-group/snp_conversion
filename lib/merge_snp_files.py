@@ -2,9 +2,9 @@
 import os
 import sys
 import pandas as pd
-import lib.file_parsing as fp
+from lib.file_parsing import parse_header
 import functools
-import lib.file_conversion as conversion
+from lib.file_conversion import write_header
 import argparse
 from functools import reduce
 import numpy as np
@@ -60,7 +60,7 @@ def files_to_dfs(snp_array, in_dir):
     entire_head_dict = {}
     for f in snp_array:
         file_path = os.path.join(in_dir, f)
-        header_row, header_dict = fp.parse_header(file_path)
+        header_row, header_dict = parse_header(file_path)
         entire_head_dict.update({f: header_dict})
         with open(file_path, "r") as input_file:
             df = pd.read_csv(input_file, skiprows=header_row, sep="\t")
@@ -98,7 +98,7 @@ def merge_matrix_files(input_dir, input_files, input_type, outfile_name):
         new_df.fillna("--", inplace=True)
         # Update header information and write to new file
         header_out = update_header_dict(entire_header_dict, new_df, input_type)
-        header_file = conversion.write_header(outfile_name, header_out)
+        header_file = write_header(outfile_name, header_out)
         # Write dataframes to outfile
         col_list = list(new_df)
         new_df.to_csv(outfile_name, index=None, mode="a", header=col_list, sep="\t")
@@ -110,7 +110,7 @@ def merge_matrix_files(input_dir, input_files, input_type, outfile_name):
             all_dfs.append(long_file_dict[key])
         new_long_df = pd.concat(all_dfs, ignore_index=True)
         header_out = update_header_dict(long_entire_head_dict, new_long_df, input_type)
-        header_files = conversion.write_header(outfile_name, header_out)
+        header_files = write_header(outfile_name, header_out)
         # Write new DF to outfile
         col_list = list(new_long_df)
         new_long_df.to_csv(

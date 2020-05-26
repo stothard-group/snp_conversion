@@ -4,10 +4,10 @@ import sys
 import lib.common_vcf_libs as gt
 import time
 import datetime
-import lib.make_logs as make_logs
-import lib.variant_file_finder as vff
+from lib.make_logs import simple_log, get_logname
+from lib.variant_file_finder import var_match
 import os
-import lib.file_parsing as fp
+from lib.file_parsing import uncompressing
 import numpy as np
 from functools import reduce
 import argparse
@@ -42,7 +42,7 @@ def get_ref_alt_values(
     generic_position_df = generic_position_df_list[0]
     # Read in var file ref and alt data
     converting_file = True
-    var_match_list_out, mod_verbose_log, alt_bool = vff.var_match(
+    var_match_list_out, mod_verbose_log, alt_bool = var_match(
         variant_file_list,
         conversion_dir,
         generic_position_df,
@@ -54,7 +54,7 @@ def get_ref_alt_values(
     var_species_path = os.path.join(conversion_dir, species)
     var_assembly_path = os.path.join(var_species_path, assembly)
     filepath = os.path.join(var_assembly_path, var_match_list_out[0])
-    header_count = fp.uncompressing(filepath)
+    header_count = uncompressing(filepath)
     whole_var_df = pd.read_csv(
         filepath, header=0, skiprows=header_count, compression="infer"
     )
@@ -226,7 +226,7 @@ def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfi
         pass
     vcf_out = vcf_df_working.astype({"POS": "int"})
     if logfile:
-        logfile = make_logs.simple_log(log_array, filename, logfile)
+        logfile = simple_log(log_array, filename, logfile)
     return vcf_out, logfile
 
 
@@ -288,7 +288,7 @@ def write_vcf_file(
     # Write DF to output
     vcf_df.to_csv(output, sep="\t", index=False, mode="a", compression=compression_type)
     if logfile:
-        logfile = make_logs.simple_log(log_array, filename, logfile)
+        logfile = simple_log(log_array, filename, logfile)
     return output, logfile
 
 
@@ -327,7 +327,7 @@ def vcf_generator(
     if verbose_logging:
         timestr = time.strftime("%Y%m%d%H%M%S")
         log_suffix = "-" + timestr + ".log"
-        log_input = make_logs.get_logname(log_suffix, snp_file)
+        log_input = get_logname(log_suffix, snp_file)
     else:
         log_input = None
 

@@ -6,11 +6,11 @@ import lib.errors as errors
 import warnings
 from pandas.errors import ParserError
 import time
-import lib.file_format_checker as ffc
-import lib.file_parsing as fp
+from lib.file_format_checker import affy_test, TFDP_format_check
+from lib.file_parsing import parse_header
 import lib.file_conversion as fc
-import lib.make_logs as make_logs
-import lib.variant_file_finder as vff
+from lib.make_logs import simple_log
+from lib.variant_file_finder import var_match, get_var_df
 import atexit
 import concurrent.futures as cf
 
@@ -156,7 +156,7 @@ def long_file_to_array(illumina_df, logfile, file_name):
             )
             df_dict.update({ty: output_df_2})
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
+        logging = simple_log(log_array, file_name, logfile)
     return df_dict
 
 
@@ -216,7 +216,7 @@ def check_input_snp_panel(
         affy_flag = True
     else:
         affy_flag = False
-    affy_flag = ffc.affy_test(snp_panel, file_name, file_type, affy_flag)
+    affy_flag = affy_test(snp_panel, file_name, file_type, affy_flag)
     if affy_flag is True:
         # Parse affymetrix file
         logfile_text = "Parsing AFFY file"
@@ -225,7 +225,7 @@ def check_input_snp_panel(
         panel_dataframe = affy_data_dict
     else:  # not an affy file
         # Read in header info of Illumina file
-        header_row, header_dict = fp.parse_header(snp_panel)
+        header_row, header_dict = parse_header(snp_panel)
         # Read in data from Illumina file
         illumina_data_df = None
         try:
@@ -241,7 +241,7 @@ def check_input_snp_panel(
                 )
                 if file_type != "PLUS":
                     converting_file = False
-                    var_list, log_text, alt_bool = vff.var_match(
+                    var_list, log_text, alt_bool = var_match(
                         variant_files,
                         variant_directory,
                         illumina_data_df,
@@ -252,7 +252,7 @@ def check_input_snp_panel(
                     )
                     for text in log_text:
                         log_array.append(text)
-                    var_df = vff.get_var_df(
+                    var_df = get_var_df(
                         variant_directory, var_list[0], assembly, species, alt_bool
                     )
                     matrix_type = file_type
@@ -303,7 +303,7 @@ def check_input_snp_panel(
     timestr = time.strftime("%H:%M:%S")
     logfile_text = timestr + " ..... Finding the matching variant file "
     log_array.append(logfile_text)
-    var_list, log_text, alt_bool = vff.var_match(
+    var_list, log_text, alt_bool = var_match(
         variant_files,
         variant_directory,
         panel_dataframe,
@@ -314,7 +314,7 @@ def check_input_snp_panel(
     )
     for text in log_text:
         log_array.append(text)
-    var_df = vff.get_var_df(variant_directory, var_list[0], assembly, species, alt_bool)
+    var_df = get_var_df(variant_directory, var_list[0], assembly, species, alt_bool)
     #  Check if PLUS format exists, and if not, convert long fwd format to plus (or whatever format exists)
     if affy_flag is False:
         if file_type == "LONG":
@@ -378,7 +378,7 @@ def check_input_snp_panel(
     fmt = "PLUS"
     logfile_text = "Checking the panel file format relative to the variant file"
     log_array.append(logfile_text)
-    format_check, format_log_out = ffc.TFDP_format_check(
+    format_check, format_log_out = TFDP_format_check(
         panel_dataframe, var_df, fmt, file_name, is_mixed, logfile
     )
     if format_check != 0:
@@ -386,7 +386,7 @@ def check_input_snp_panel(
             "Quick format check may have found inaccuracies: run check_format module"
         )
         log_array.append(message)
-        atexit.register(make_logs.simple_log, log_array, file_name, format_log_out)
+        atexit.register(simple_log, log_array, file_name, format_log_out)
         exit(message)
     else:
         logfile_text = "SNP panel file is correctly formatted"
@@ -396,7 +396,7 @@ def check_input_snp_panel(
     else:
         panel_dataframe_updated = panel_dataframe
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
+        logging = simple_log(log_array, file_name, logfile)
     return format_check, format_log_out, panel_dataframe_updated, var_df
 
 
@@ -479,5 +479,5 @@ def get_snp_panel_positional_info(
     #        pos_df_nullvals_removed = pos_df_nullvals_removed[pos_df_nullvals_removed.BLAST_position != '.']
     #        positional_info_dict.update({each_sample: [pos_df_nullvals_removed, pos_df_nullvals_only]})
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
+        logging = simple_log(log_array, file_name, logfile)
     return positional_info_dict, logfile

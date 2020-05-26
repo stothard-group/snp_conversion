@@ -2,13 +2,14 @@
 import argparse
 import os
 import sys
-import lib.file_parsing as fp
+from lib.file_parsing import check_header_data_congruency
+from lib.file_parsing import parse_header
 import pandas as pd
 import warnings
 import numpy as np
-import lib.variant_file_finder as vff
+from lib.variant_file_finder import var_match, get_var_df
 import lib.make_logs as make_logs
-import lib.write_summary as summ
+from lib.write_summary import write_summary
 import lib.errors as errors
 from pandas.errors import ParserError
 import lib.plink_output as make_plink
@@ -294,7 +295,7 @@ def get_long_df_dict(long_df, header_row, header_dict, numbers_exist, file, logf
         samples_list = list(set(long_df["Sample ID"]))
         num_samples = len(samples_list)
         num_snps = len(long_df["SNP Name"].unique())
-        header_congruency = fp.check_header_data_congruency(
+        header_congruency = check_header_data_congruency(
             header_dict, num_samples, num_snps
         )
         if header_congruency:
@@ -352,7 +353,7 @@ def check_illumina_df_header(
     if header_row != 0 and numbers_exist:
         num_samples = len(illumina_df.columns) - 1
         num_snps = len(illumina_df.index)
-        header_congruency = fp.check_header_data_congruency(
+        header_congruency = check_header_data_congruency(
             header_dict, num_samples, num_snps
         )
         if header_congruency:
@@ -1224,7 +1225,7 @@ def file_format_check(
         # If an Illumina format
         else:
             # Parse header of Illumina file
-            header_row, header_dict = fp.parse_header(file_path)
+            header_row, header_dict = parse_header(file_path)
             numbers_exist = False
             if "Num Samples" in header_dict and "Num SNPs" in header_dict:
                 numbers_exist = True
@@ -1247,7 +1248,7 @@ def file_format_check(
                 illumina_matrix_df = True
         # Get corresponding variant file
         converting_file = False
-        var_list, mod_verbose_log, alt_bool = vff.var_match(
+        var_list, mod_verbose_log, alt_bool = var_match(
             variant_files,
             conversion_dir,
             generic_input_df,
@@ -1260,7 +1261,7 @@ def file_format_check(
             error_log_text.append(text)
         if log_input is not None:
             logging = make_logs.simple_log(error_log_text, file, logfile)
-        var_df = vff.get_var_df(
+        var_df = get_var_df(
             conversion_dir, var_list[0], assembly, species, alt_bool
         )
 
@@ -1288,7 +1289,7 @@ def file_format_check(
                     sum_type = "PLUS"
                 else:  # specified type is "AFFY"
                     sum_type = "FWD"
-                sum_file = summ.write_summary(
+                sum_file = write_summary(
                     generic_input_df,
                     sum_type,
                     file,
@@ -1312,7 +1313,7 @@ def file_format_check(
                 log_input,
             ) = check_long_format(long_df_dict, illumina_df, var_df, file, log_input)
             if summarize is True:
-                sum_file = summ.write_summary(
+                sum_file = write_summary(
                     illumina_df,
                     "LONG",
                     file,
@@ -1345,7 +1346,7 @@ def file_format_check(
             if summarize is True:
                 equiv = 0
                 inequiv = 0
-                sum_file = summ.write_summary(
+                sum_file = write_summary(
                     illumina_df,
                     file_type,
                     file,

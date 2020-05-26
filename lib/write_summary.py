@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import pandas as pd
-import lib.file_parsing as fp
+from lib.file_parsing import parse_header
 import argparse
 import sys
 from collections import OrderedDict
@@ -418,7 +418,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     args = parser.parse_args()
-    header_row, header_dict = fp.parse_header(args.input)
+    header_row, header_dict = parse_header(args.input)
     # Make new dataframes
     with open(args.input, "r") as input_file:
         df = pd.read_csv(input_file, skiprows=header_row, sep="\t")

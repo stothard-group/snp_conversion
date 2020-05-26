@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pandas as pd
 import os
-import lib.file_parsing as fp
+from lib.file_parsing import uncompressing, get_uncompressed_file
 import warnings
 import bz2
 import gzip
@@ -34,14 +34,14 @@ def get_var_df(var_dir, var_file, assembly, species, alt_bool):
     var_species_path = os.path.join(var_dir, species)
     var_assembly_path = os.path.join(var_species_path, assembly)
     filepath = os.path.join(var_assembly_path, var_file)
-    header_count = fp.uncompressing(filepath)
+    header_count = uncompressing(filepath)
     whole_var_df = pd.read_csv(
         filepath, header=0, skiprows=header_count, compression="infer"
     )
     # Read in position file
     position_name = var_file.replace("conversion", "position")
     position_filepath = os.path.join(var_assembly_path, position_name)
-    pos_header_count = fp.uncompressing(position_filepath)
+    pos_header_count = uncompressing(position_filepath)
     position_df = pd.read_csv(
         position_filepath, header=0, skiprows=pos_header_count, compression="infer"
     )
@@ -191,9 +191,9 @@ def var_match(
         var_assembly_dir = os.path.join(var_species_dir, assembly)
         var_f2_path = os.path.join(var_assembly_dir, var_f2)
         # get the header line count
-        header_count = fp.uncompressing(var_f2_path)
+        header_count = uncompressing(var_f2_path)
         # uncompress the file
-        filetype = fp.get_uncompressed_file(var_f2_path)
+        filetype = get_uncompressed_file(var_f2_path)
         if filetype == "no match" or filetype == "native_uncompressed":
             filetype = None
         else:
@@ -203,7 +203,7 @@ def var_match(
             var_f2_path, header=0, skiprows=header_count, compression=filetype
         )
         # read important header information for each file (SPECIES=, PANEL=, REF=)
-        var_path_uncompressed = fp.get_uncompressed_file(var_f2_path)
+        var_path_uncompressed = get_uncompressed_file(var_f2_path)
         if (
             var_path_uncompressed == "no match"
             or var_path_uncompressed == "native_uncompressed"

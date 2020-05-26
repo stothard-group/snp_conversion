@@ -6,14 +6,14 @@
 import argparse
 import os
 import sys
-import lib.file_format_checker as fc
-import lib.file_parsing as fp
+from lib.file_format_checker import affy_head_check, affy_test, file_format_check
+from lib.file_parsing import parse_header
 import pandas as pd
 import warnings
 import time
 import concurrent.futures as cf
-import lib.variant_file_finder as vff
-import lib.make_logs as make_logs
+from lib.variant_file_finder import var_match, get_var_df
+from lib.make_logs import simple_log, get_logname
 import lib.errors as errors
 from functools import reduce
 from toolz import interleave
@@ -102,7 +102,7 @@ def generate_outfile_name(file, output_suffix, logfile):
         os.remove(outfile_name)
         log_array.append(warning_text)
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file, logfile)
+        logging = simple_log(log_array, file, logfile)
     return outfile_name, logfile
 
 
@@ -126,14 +126,14 @@ def read_input_file_to_df(file_path, file, file_type, logfile):
     if file_type == "AFFY":
         affy_flag = True
     # check for affymetrix file
-    affy_flag = fc.affy_test(file_path, file, file_type, affy_flag)
+    affy_flag = affy_test(file_path, file, file_type, affy_flag)
     if file_type == "AFFY" or affy_flag is True:
         affy_df = pd.read_csv(file_path, sep="\t", mangle_dupe_cols=True)
         # make dataframe look like the illumina one (remove AB columns)
         header_row = list(set(affy_df.columns))
         header_row.remove("probeset_id")
         # quick check to make sure header row is really affy format
-        head_check = fc.affy_head_check(header_row)
+        head_check = affy_head_check(header_row)
         if head_check is False:
             message = "Affymetrix file may not be properly formatted: check columns"
             log_array.append(message)
@@ -158,19 +158,19 @@ def read_input_file_to_df(file_path, file, file_type, logfile):
         header_row_num = int
         header_dict = {}
     else:  # file_type not affymetrix
-        header_row_num, header_dict = fp.parse_header(file_path)
+        header_row_num, header_dict = parse_header(file_path)
         try:
             df = pd.read_csv(file_path, skiprows=header_row_num, sep="\t")
         except ParserError:
             message = "First line might not contain column names - check formatting"
             log_array.append(message)
-            atexit.register(make_logs.simple_log, log_array, file, logfile)
+            atexit.register(simple_log, log_array, file, logfile)
             sys.exit()
         affy_AB_df = None
         if file_type != "LONG":
             df.rename(columns={"Unnamed: 0": "SNP Name"}, inplace=True)
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file, logfile)
+        logging = simple_log(log_array, file, logfile)
     return df, affy_AB_df, header_row_num, header_dict, logfile
 
 
@@ -198,10 +198,10 @@ def format_check_parse_errors(correct_file, determined_ft, file_type, file, logf
         # Do not do conversion if file does not have 100% correct SNPs
         message = "Could not complete conversion of " + file
         log_array.append(message)
-        atexit.register(make_logs.simple_log, log_array, file, logfile)
+        atexit.register(simple_log, log_array, file, logfile)
         sys.exit()
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file, logfile)
+        logging = simple_log(log_array, file, logfile)
     return True, logfile
 
 
@@ -304,7 +304,7 @@ def easy_long_conversion(
     col_list = list(output_df)
     output_df.to_csv(outfile_name, index=None, mode="a", header=col_list, sep="\t")
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file, logfile)
+        logging = simple_log(log_array, file, logfile)
     return True, logfile
 
 
@@ -335,7 +335,7 @@ def long_as_matrix(file_df, file, logfile):
     else:
         message = "Input file column names are not the expected format"
         log_array.append(message)
-        atexit.register(make_logs.simple_log, log_array, file, logfile)
+        atexit.register(simple_log, log_array, file, logfile)
         sys.exit()
     in_1, in_2 = gen_long_output_col_names(df_type)
     matrix_df = file_df[["SNP Name", "Sample ID", in_1, in_2]].copy()
@@ -357,7 +357,7 @@ def long_as_matrix(file_df, file, logfile):
         matrix_df_list,
     )
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file, logfile)
+        logging = simple_log(log_array, file, logfile)
     return matrix_out, df_type, logfile
 
 
@@ -640,7 +640,7 @@ def split_and_convert(
     else:
         pass
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file, logfile)
+        logging = simple_log(log_array, file, logfile)
     return output_df, col0_names, logfile
 
 
@@ -714,7 +714,7 @@ def reorder_converted_df(
         pre_final_output.rename({"SNP Name": ""}, axis=1, inplace=True)
         final_output_df = pre_final_output.copy()
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file, logfile)
+        logging = simple_log(log_array, file, logfile)
     return final_output_df, logfile
 
 
@@ -781,7 +781,7 @@ def write_to_outfile(
         merged_df.columns = [col.replace(".1", "") for col in merged_df.columns]
         merged_df.to_csv(outfile_name, index=None, mode="a", header=True, sep="\t")
     if logfile is not None:
-        logging = make_logs.simple_log(log_array, file, logfile)
+        logging = simple_log(log_array, file, logfile)
     return True, logfile
 
 
@@ -873,7 +873,7 @@ def convert_file(
         if is_verbose:
             timestr = time.strftime("%Y%m%d%H%M%S")
             log_suffix = "-" + timestr + ".log"
-            log_input = make_logs.get_logname(log_suffix, file)
+            log_input = get_logname(log_suffix, file)
         else:
             log_input = None
 
@@ -895,10 +895,10 @@ def convert_file(
         logfile_text_1 = timestr + " ..... Finding correct variant file"
         log_array_1 = [logfile_text_1]
         if logfile2 is not None:
-            logging = make_logs.simple_log(log_array_1, file, logfile2)
+            logging = simple_log(log_array_1, file, logfile2)
 
         converting_file = True
-        var_list, logfile2_text, alt_bool = vff.var_match(
+        var_list, logfile2_text, alt_bool = var_match(
             variant_files,
             conversion_dir,
             file_df,
@@ -907,7 +907,7 @@ def convert_file(
             assembly,
             species,
         )
-        var_df = vff.get_var_df(
+        var_df = get_var_df(
             conversion_dir, var_list[0], assembly, species, alt_bool
         )
 
@@ -916,14 +916,14 @@ def convert_file(
         logfile_text_2 = timestr + " ..... Running file format check"
         log_array_2 = [logfile2_text, logfile_text_2]
         if logfile2 is not None:
-            logging = make_logs.simple_log(log_array_2, file, logfile2)
+            logging = simple_log(log_array_2, file, logfile2)
 
         get_snp_pan = (
             False  ######## CHANGE THIS IF YOU WANT TO PUT SNP PANEL OPTION IN HERE
         )
         internal_sum = False
         format_check_plink = False
-        determined_ft, correct_file, logfile3 = fc.file_format_check(
+        determined_ft, correct_file, logfile3 = file_format_check(
             input_dir,
             file,
             file_type,
@@ -1003,11 +1003,11 @@ def convert_file(
         logfile_text_3 = timestr + " ..... Checking for correct conversion"
         log_array_3 = [logfile_text_3]
         if logfile8 is not None:
-            logging = make_logs.simple_log(log_array_3, file, logfile8)
+            logging = simple_log(log_array_3, file, logfile8)
 
         new_input_dir = "."
         get_snp_panel = False
-        correct_output_type, correct_output, logfile9 = fc.file_format_check(
+        correct_output_type, correct_output, logfile9 = file_format_check(
             new_input_dir,
             outfile_name,
             specified_out,
@@ -1033,7 +1033,7 @@ def convert_file(
             warnings.warn(message, stacklevel=4)
         # Write to log file if verbose
         if logfile9 is not None:
-            logging = make_logs.simple_log(log_array, file, logfile9)
+            logging = simple_log(log_array, file, logfile9)
     return True
 
 
