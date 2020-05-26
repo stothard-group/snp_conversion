@@ -127,11 +127,11 @@ def get_variant_files(conversion_dir, assembly, species):
 
 def affy_test(file_path, file, file_type, affy_flag):
     """
-    Determines whether the input file might be affymetrix format, especially important if input format is mixed
+    Determines whether the input file might be AFFY format, especially important if input format is mixed
     :param file_path: path to input snp file
     :param file: input file name
     :param file_type: input file type
-    :param affy_flag: (bool) True if affymetrix file was specified
+    :param affy_flag: (bool) True if AFFY file was specified
     :return: (Bool) whether or not file is affy format
     """
     with open(file_path) as f:
@@ -143,16 +143,16 @@ def affy_test(file_path, file, file_type, affy_flag):
                 warnings.warn(
                     "File "
                     + file
-                    + " appears to be in affymetrix format, but input format is "
+                    + " appears to be in AFFY format, but input format is "
                     + file_type,
                     stacklevel=4,
                 )
             affy_flag = True
-        elif (line == "[Header]" or line == "[Data]") and file_type == "affymetrix":
+        elif (line == "[Header]" or line == "[Data]") and file_type == "AFFY":
             warnings.warn(
                 "File "
                 + file
-                + " appears to be in Illumina format, but input format is affymetrix",
+                + " appears to be in Illumina format, but input format is AFFY",
                 stacklevel=4,
             )
             affy_flag = False
@@ -163,7 +163,7 @@ def affy_test(file_path, file, file_type, affy_flag):
                 warnings.warn(
                     "File "
                     + file
-                    + " appears to be in affymetrix format, but input format is "
+                    + " appears to be in AFFY format, but input format is "
                     + file_type,
                     stacklevel=4,
                 )
@@ -176,8 +176,8 @@ def affy_test(file_path, file, file_type, affy_flag):
 
 def affy_head_check(header):
     """
-    Checks the header format to see if affymetrix has AB columns
-    :param header: header line of affymetrix file (first line)
+    Checks the header format to see if AFFY has AB columns
+    :param header: header line of AFFY file (first line)
     :return: (Bool) Whether header has AB format columns as well (True)
     """
     simple_list = []
@@ -196,14 +196,14 @@ def affy_head_check(header):
 
 def parse_affy_file(file_path, file, logfile):
     """
-    Parses affymetrix file input
+    Parses AFFY file input
     :param file_path: path to input file
     :param file: input file name
     :param logfile: logfile
-    :return: affymetrix dict, affy_dataframe, logfile
+    :return: AFFY dict, affy_dataframe, logfile
     """
     timestr = time.strftime("%H:%M:%S")
-    logfile_text = timestr + " ..... Reading in affymetrix input file"
+    logfile_text = timestr + " ..... Reading in AFFY input file"
     log_array = [logfile_text]
     # Test affy forward values here
     affy_df = pd.read_csv(file_path, sep="\t", mangle_dupe_cols=True)
@@ -550,8 +550,8 @@ def check_affy_format(
     logfile,
 ):
     """
-    Check format of an affymetrix dataframe using TFDR
-    :param affy_df: affymetrix input dataframe
+    Check format of an AFFY dataframe using TFDR
+    :param affy_df: AFFY input dataframe
     :param var_df: variant dataframe
     :param specified_file_type: file type specified by user
     :param file: file name for logging
@@ -569,7 +569,7 @@ def check_affy_format(
         is_mixed = False
     if specified_file_type == "AFFY-PLUS":
         affy_fmt = "PLUS"
-    elif specified_file_type == "affymetrix":
+    elif specified_file_type == "AFFY":
         affy_fmt = "FWD"
     else:
         affy_fmt = (
@@ -585,15 +585,19 @@ def check_affy_format(
                 "Affymetrix file is incorrectly formatted - see log for details."
             )
         else:
-            out_string = "Affymetrix file is incorrectly formatted - re-run with --input-format affymetrix for details"
+            out_string = "Affymetrix file is incorrectly formatted - re-run with --input-format AFFY for details"
         warnings.warn(out_string, stacklevel=4)
         filetype = None
         correct_format = False
     else:  # format check is correct
-        out_string = "File " + file + " is correctly formatted in Affymetrix format"
-        print(out_string)
+        if affy_fmt == "PLUS":
+            out_string = "File " + file + " is correctly formatted in Affymetrix PLUS format"
+            print(out_string)
+        elif affy_fmt == "FWD":
+            out_string = "File " + file + " is correctly formatted in Affymetrix format"
+            print(out_string)
         log_array.append(out_string)
-        filetype = "affymetrix"
+        filetype = "AFFY"
         correct_format = True
     if logfile is not None:
         logging = make_logs.simple_log(log_array, file, logfile)
@@ -1175,7 +1179,7 @@ def file_format_check(
         file_type = specified_file_type  # from here, only use file_type var
     # Get affy_flag
     affy_flag = False
-    if file_type == "affymetrix" or specified_file_type == "AFFY-PLUS":
+    if file_type == "AFFY" or specified_file_type == "AFFY-PLUS":
         affy_flag = True
 
     # Get all input files
@@ -1204,10 +1208,10 @@ def file_format_check(
         long_df_dict = {}
         illumina_matrix_df = False
 
-        # quick test for whether this still might be an affymetrix file
+        # quick test for whether this still might be an AFFY file
         affy_flag = affy_test(file_path, file, file_type, affy_flag)
 
-        # If affy_flag is True, parse affymetrix file
+        # If affy_flag is True, parse AFFY file
         if affy_flag is True:
             affy_header_dict, affy_df, log_input = parse_affy_file(
                 file_path, file, log_input
@@ -1383,20 +1387,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "--file-list",
         type=str,
-        help="[optional] comma-separated list of files in the input directory",
+        help="[Optional] comma-separated list of files in the input directory",
     )
     parser.add_argument(
         "--input-format",
         type=str,
-        choices=["TOP", "FWD", "AB", "DESIGN", "mixed", "LONG", "PLUS", "affymetrix"],
-        help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'DESIGN', 'LONG', 'PLUS', or 'mixed' (Illumina) or 'affymetrix' (Affymetrix)",
+        choices=["TOP", "FWD", "AB", "DESIGN", "mixed", "LONG", "PLUS", "AFFY"],
+        help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'DESIGN', 'LONG', 'PLUS', or 'mixed' (Illumina) or 'AFFY' (Affymetrix)",
     )
 
     parser.add_argument(
         "--get-snp-panel",
         action="store_true",
         default=False,
-        help="[optional] Will determine which genotype conversion key files contain all SNPs in the input",
+        help="[Optional] Will determine which genotype conversion key files contain all SNPs in the input",
     )
     parser.add_argument(
         "-v",
@@ -1404,10 +1408,10 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         required=False,
-        help="[optional] Write output to both STDOUT and log file",
+        help="[Optional] Write output to both STDOUT and log file",
     )
     parser.add_argument(
-        "--key-dir",
+        "--conversion",
         type=str,
         default="variant_position_files",
         help="Directory containing genotype conversion key files (default = variant_position_files)",
@@ -1460,7 +1464,7 @@ if __name__ == "__main__":
         args.input_format,
         args.get_snp_panel,
         args.verbose_logging,
-        args.key_dir,
+        args.conversion,
         log_file,
         args.assembly,
         args.summary,

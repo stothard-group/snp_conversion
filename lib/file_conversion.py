@@ -123,11 +123,11 @@ def read_input_file_to_df(file_path, file, file_type, logfile):
     logfile_text = timestr + " ..... Reading in input file"
     log_array = [logfile_text]
     affy_flag = False
-    if file_type == "affymetrix":
+    if file_type == "AFFY":
         affy_flag = True
     # check for affymetrix file
     affy_flag = fc.affy_test(file_path, file, file_type, affy_flag)
-    if file_type == "affymetrix" or affy_flag is True:
+    if file_type == "AFFY" or affy_flag is True:
         affy_df = pd.read_csv(file_path, sep="\t", mangle_dupe_cols=True)
         # make dataframe look like the illumina one (remove AB columns)
         header_row = list(set(affy_df.columns))
@@ -960,7 +960,7 @@ def convert_file(
                 )
         else:
             df_for_conversion = file_df
-            if determined_ft == "affymetrix":
+            if determined_ft == "AFFY":
                 matrix_type = "FWD"
             else:
                 matrix_type = determined_ft
@@ -1048,7 +1048,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--file-list",
         type=str,
-        help="[optional] comma-separated list of files in the input directory",
+        help="[Optional] comma-separated list of files in the input directory",
     )
     parser.add_argument(
         "--input-format",
@@ -1074,7 +1074,7 @@ if __name__ == "__main__":
         type=int,
         default=2,
         required=False,
-        help="[optional] Number of threads to use during conversion (default = 2)",
+        help="[Optional] Number of threads to use during conversion (default = 2)",
     )
     parser.add_argument(
         "-v",
@@ -1082,10 +1082,10 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         required=False,
-        help="[optional] Write output to both STDOUT and log file",
+        help="[Optional] Write output to both STDOUT and log file",
     )
     parser.add_argument(
-        "--key-dir",
+        "--conversion",
         type=str,
         default="variant_position_files",
         help="Directory containing genotype conversion key files (default = variant_position_files)",
@@ -1139,7 +1139,7 @@ if __name__ == "__main__":
     o_suffix = args.output_name
     threads = args.threads
     vb = args.verbose_logging
-    conv_dir = args.key_dir
+    conv_dir = args.conversion
     assembly_val = args.assembly
 
     out = convert_file(

@@ -132,7 +132,7 @@ def merge_affy_files(input_dir, input_files, input_type, outfile_name):
         # get all files in directory using file list
         snp_files_array = input_files.split(",")
     df_list = []
-    if input_type == "affymetrix":
+    if input_type == "AFFY":
         for affy_file in snp_files_array:
             affy_file_path = os.path.join(input_dir, affy_file)
             affy_df = pd.read_csv(affy_file_path, sep="\t", mangle_dupe_cols=True)
@@ -226,19 +226,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--input-format",
         type=str,
-        choices=["TOP", "FWD", "AB", "DESIGN", "PLUS", "LONG", "affymetrix"],
+        choices=["TOP", "FWD", "AB", "DESIGN", "PLUS", "LONG", "AFFY"],
         required=True,
-        help="Type of files: 'TOP', 'FWD', 'AB', 'DESIGN', 'PLUS', 'LONG', or  'affymetrix'. All files to be merged "
+        help="Type of files: 'TOP', 'FWD', 'AB', 'DESIGN', 'PLUS', 'LONG', or  'AFFY'. All files to be merged "
         "must be in the same format. "
         "If they are in PLUS format, they must be derived from the same genome (i.e. the same genotype conversion "
         "key)."
-        "'affymetrix' format can be either the native FORWARD format or the converted PLUS format.",
+        "'AFFY' format can be either the native FORWARD format or the converted PLUS format.",
     )
     parser.add_argument("--output-name", type=str, help="Name of merged file")
     parser.add_argument(
         "--file-list",
         type=str,
-        help="[optional] comma-separated list of files in the input directory to be merged",
+        help="[Optional] comma-separated list of files in the input directory to be merged",
     )
 
     if len(sys.argv) == 1:
@@ -247,7 +247,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     log_file = None
-    if args.input_format == "affymetrix":
+    if args.input_format == "AFFY":
         output = merge_affy_files(
             args.input_dir, args.file_list, args.input_format, args.output_name
         )
