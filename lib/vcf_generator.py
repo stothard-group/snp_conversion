@@ -105,6 +105,9 @@ def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfi
     :param logfile: logfile
     :return: vcf dataframe (CHROM, POS, ID, REF, ALT, FORMAT, animals...)
     """
+    log_array = []
+    message = "Converting genotype data to VCF style"
+    log_array.append(message)
     vcf_df_list = []
     for animal in position_dict:
         animal_df = position_dict[animal][0]
@@ -187,7 +190,6 @@ def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfi
         animal_refalt[animal_name] = animal_refalt["GT_NUM"].map(
             {10: "0/0", 11: "1/1", 12: "0/1", 0: "./."}
         )
-        # TODO: add into readme that this converter replaces indels with -/- values
         animal_refalt.drop(
             [
                 "Name",
@@ -223,6 +225,8 @@ def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfi
     else:
         pass
     vcf_out = vcf_df_working.astype({"POS": "int"})
+    if logfile:
+        logfile = make_logs.simple_log(log_array, filename, logfile)
     return vcf_out, logfile
 
 
@@ -241,6 +245,9 @@ def write_vcf_file(
     :param logfile: logfile
     :return: file written to output
     """
+    log_array = []
+    message = "Writing VCF file"
+    log_array.append(message)
     if not output_name:
         split_name = os.path.splitext(filename)
         output = split_name[0] + ".vcf"
@@ -280,6 +287,8 @@ def write_vcf_file(
         output_fh.close()
     # Write DF to output
     vcf_df.to_csv(output, sep="\t", index=False, mode="a", compression=compression_type)
+    if logfile:
+        logfile = make_logs.simple_log(log_array, filename, logfile)
     return output, logfile
 
 
@@ -394,8 +403,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--panel-type",
         type=str,
-        choices=["TOP", "FWD", "AB", "DESIGN", "LONG", "PLUS", "affymetrix"],
-        help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'DESIGN', 'LONG', 'PLUS', or 'affymetrix' (Affymetrix)",
+        choices=["TOP", "FWD", "AB", "DESIGN", "LONG", "PLUS", "AFFY"],
+        help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'DESIGN', 'LONG', 'PLUS', or 'AFFY' (Affymetrix)",
     )
     parser.add_argument(
         "-v",
@@ -403,10 +412,10 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         required=False,
-        help="[optional] Write output to both STDOUT and log file",
+        help="[Optional] Write output to both STDOUT and log file",
     )
     parser.add_argument(
-        "--key-dir",
+        "--conversion",
         type=str,
         default="variant_position_files",
         help="Directory containing genotype conversion key files (default = variant_position_files)",
@@ -435,7 +444,7 @@ if __name__ == "__main__":
         type=int,
         default=2,
         required=False,
-        help="[optional] Number of threads to use if conversion to PLUS format is required (default = 2)",
+        help="[Optional] Number of threads to use if conversion to PLUS format is required (default = 2)",
     )
     parser.add_argument(
         "-c",
@@ -458,7 +467,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     vcf_generator(
         args.snp_panel,
-        args.key_dir,
+        args.conversion,
         args.species,
         args.assembly,
         args.panel_type,

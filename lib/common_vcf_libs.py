@@ -86,7 +86,7 @@ def retrieve_all_variant_files(variant_dir, assembly, species):
     return variant_files
 
 
-def parse_affymetrix_file(affy_file_path, file_name, logfile):
+def parse_AFFY_file(affy_file_path, file_name, logfile):
     """
     Reads in known affymetrix file and returns affymetrix header dict and affymetrix data dict
     :param affy_file_path: file path to the user input SNP panel (in affy format)
@@ -212,16 +212,16 @@ def check_input_snp_panel(
     panel_dataframe = None
     long_file_df_dict = {}
     # test for affymetrix file
-    if file_type == "affymetrix":
+    if file_type == "AFFY":
         affy_flag = True
     else:
         affy_flag = False
     affy_flag = ffc.affy_test(snp_panel, file_name, file_type, affy_flag)
     if affy_flag is True:
         # Parse affymetrix file
-        logfile_text = "Parsing affymetrix file"
+        logfile_text = "Parsing AFFY file"
         log_array.append(logfile_text)
-        affy_data_dict = parse_affymetrix_file(snp_panel, file_name, logfile)
+        affy_data_dict = parse_AFFY_file(snp_panel, file_name, logfile)
         panel_dataframe = affy_data_dict
     else:  # not an affy file
         # Read in header info of Illumina file

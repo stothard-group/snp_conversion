@@ -11,6 +11,7 @@ import pandas as pd
 from pandas.errors import ParserError
 import lib.variant_file_finder as vff
 import lib.file_conversion as fc
+import lib.common_vcf_libs as gt
 import allel
 import argparse
 import sys
@@ -36,412 +37,6 @@ def check_user_platform():
     else:
         threading = False
     return threading
-
-
-def retrieve_user_input_file(panel_path):
-    """
-    Splits the path and snp file basename from the user input var snp-panel.
-    Performs error checking for non text files and files not found.
-    :param panel_path: path to snp file or filename
-    :return: path to directory containing the snp panel
-    :return: snp panel file name
-    """
-    panel_names = os.path.split(panel_path)
-    path_to_file = panel_path
-    file_name = panel_names[1]
-    # try to open file
-    try:
-        with open(panel_path) as fi:
-            pass
-    except FileNotFoundError:
-        print("Cannot find file " + panel_path)
-    finally:
-        fi.close()
-        file_array = [panel_path]
-    non_txt_file = errors.non_txt_fmt_input_files(file_array)
-    if non_txt_file:
-        exit("File " + panel_path + " is not a text file.")
-    else:
-        pass
-
-    return path_to_file, file_name
-
-
-def retrieve_all_variant_files(variant_dir, assembly, species):
-    """
-    Gets a list of all possible variant files (checking for an allowed assembly name) and excludes files in the variant
-    directory that are not .csv format
-    :param variant_dir: directory containing variant files (default: variant_position_files
-    :param assembly: user-inputted name of assembly (e.g. UMD3.1)
-    :return: list of all acceptable variant files
-    """
-    variant_species_dir = os.path.join(variant_dir, species)
-    variant_assembly_dir = os.path.join(variant_species_dir, assembly)
-    variant_files = os.listdir(variant_assembly_dir)
-    variant_exclude = errors.non_csv_fmt_conversion_files(
-        variant_dir, assembly, species
-    )
-    if variant_exclude:
-        warnings.warn(
-            "The following variant files are not .csv files are are excluded from analysis: "
-            + ", ".join(variant_exclude),
-            stacklevel=3,
-        )
-        for wrong_var in variant_exclude:
-            variant_files.remove(wrong_var)  # remove non-csv variant files
-    else:
-        pass
-    return variant_files
-
-
-def parse_affymetrix_file(affy_file_path, file_name, logfile):
-    """
-    Reads in known affymetrix file and returns affymetrix header dict and affymetrix data dict
-    :param affy_file_path: file path to the user input SNP panel (in affy format)
-    :param file_name: name of SNP panel for writing to log file
-    :param logfile: log file
-    :return: dict containing affy data (genotype, not AB data)
-    """
-    affy_df = pd.read_csv(affy_file_path, sep="\t", mangle_dupe_cols=True)
-    # make dataframe look like the illumina one (remove AB columns)
-    header_row = list(set(affy_df.columns))
-    header_row.remove("probeset_id")
-    affy_header_dict = {}
-    for value in header_row:
-        new_affy_df = affy_df[["probeset_id", value]].copy()
-        ab_list = ["AA", "AB", "BB", "NoCall"]
-        test_ab_df = ~new_affy_df.iloc[:, 1:].isin(ab_list)
-        not_ab = sum(test_ab_df.sum(axis=1))
-        affy_header_dict.update({value: not_ab})
-    copy_affy_df = affy_df.copy()  # keep a copy just in case
-    for keys in affy_header_dict:
-        if affy_header_dict[keys] == 0:
-            affy_df.drop(columns=keys, inplace=True)
-    affy_df.rename(columns={"probeset_id": "Name"}, inplace=True)
-    return affy_df
-
-
-def long_file_to_array(illumina_df, logfile, file_name):
-    """
-    Parses a Long format file and creates a dict where each value is a dataframe for each 'file type'
-    :param illumina_df: long file dataframe
-    :param logfile: logfile name
-    :param file_name: name of the snp panel file
-    :return: dict containing all file type-specific dataframes in a long file
-    """
-    log_array = []
-    type_list = ["PLUS"]
-    df_dict = {}
-    for ty in type_list:
-        out1, out2 = fc.gen_long_output_col_names(ty)
-        # Make sure allele type exists
-        if out1 not in illumina_df.columns or out2 not in illumina_df.columns:
-            message = (
-                "Columns " + out1 + " and " + out2 + " might not be in the input file"
-            )
-            warnings.warn(message, stacklevel=4)
-            log_array.append(message)
-        else:
-            sub_long_df = illumina_df[["SNP Name", "Sample ID", out1, out2]]
-            # print new df by sample and save to dict by "file type"
-            sample_list = sub_long_df["Sample ID"]
-            unique_samples = list(set(sample_list))
-            pos1 = sub_long_df.columns.values[2]
-            pos2 = sub_long_df.columns.values[3]
-            output_df = sub_long_df[["SNP Name"]].copy()
-            output_df = output_df.rename(columns={"SNP Name": "Name"})
-            sub_sample_df_list = []
-            for sample in unique_samples:
-                sub_sub_df = sub_long_df[sub_long_df["Sample ID"] == sample].copy()
-                sub_sub_df.rename(columns={"SNP Name": "Name"}, inplace=True)
-                sub_sample_df = sub_sub_df[["Name"]].copy()
-                sub_sample_df[sample] = sub_sub_df[[pos1, pos2]].apply(
-                    lambda x: "".join(x), axis=1
-                )
-                sub_sample_df_list.append(sub_sample_df)
-            output_df_2 = reduce(
-                lambda x, y: pd.merge(x, y, on="Name", how="left"), sub_sample_df_list
-            )
-            df_dict.update({ty: output_df_2})
-    if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
-    return df_dict
-
-
-def update_snp_panel_names(panel_df):
-    """
-     Adds .1 values to this dataframe as the rest of the script depends on them
-    :param panel_df: panel dataframe to update
-    :return: updated dataframe
-    """
-    column_list = list(panel_df)
-    column_list.remove("Name")
-    update_col_dict = {}
-    for colname in column_list:
-        new_name = colname + ".1"
-        update_col_dict.update({colname: new_name})
-    panel_df.rename(columns=update_col_dict, inplace=True)
-    return panel_df
-
-
-def check_input_snp_panel(
-    snp_panel,
-    file_name,
-    file_type,
-    variant_files,
-    assembly,
-    variant_directory,
-    can_we_thread,
-    n_threads,
-    logfile,
-    species,
-):
-    """
-    Function uses the file_format_check module to determine whether the SNP panel has a correct input format, or
-    determines the input format if the format is "mixed" or unknown.
-    :param snp_panel: path to the user input SNP panel
-    :param file_name: name of user input SNP panel
-    :param file_type: user-specified input file type
-    :param variant_files: list of acceptable variant files
-    :param assembly: user-inputted assembly to use
-    :param variant_directory: dir containing variant files
-    :param can_we_thread: (bool) test of whether we can thread
-    :param n_threads: number of threads for threading
-    :param logfile: log file name to pass to functions
-    :param species: species name for variant file finding
-    :return: determined filetype, if the file is correct (correct file), name of log file
-    """
-    log_array = []
-    timestr = time.strftime("%H:%M:%S")
-    logfile_text = timestr + " ..... Checking the format of the SNP panel"
-    print("Checking SNP panel format")
-    log_array.append(logfile_text)
-    # declare some variables to make things easier later
-    panel_dataframe = None
-    long_file_df_dict = {}
-    # test for affymetrix file
-    if file_type == "affymetrix":
-        affy_flag = True
-    else:
-        affy_flag = False
-    affy_flag = ffc.affy_test(snp_panel, file_name, file_type, affy_flag)
-    if affy_flag is True:
-        # Parse affymetrix file
-        logfile_text = "Parsing affymetrix file"
-        log_array.append(logfile_text)
-        affy_data_dict = parse_affymetrix_file(snp_panel, file_name, logfile)
-        panel_dataframe = affy_data_dict
-    else:  # not an affy file
-        # Read in header info of Illumina file
-        header_row, header_dict = fp.parse_header(snp_panel)
-        # Read in data from Illumina file
-        illumina_data_df = None
-        try:
-            illumina_data_df = pd.read_csv(snp_panel, skiprows=header_row, sep="\t")
-        except ParserError:
-            exit("First line might not contain column names - check formatting")
-        if illumina_data_df is not None:
-            if file_type != "LONG":
-                logfile_text = "Parsing " + file_type + " file"
-                log_array.append(logfile_text)
-                illumina_data_df.rename(
-                    columns={"Unnamed: 0": "SNP Name"}, inplace=True
-                )
-                panel_dataframe = illumina_data_df
-                # add .1 values to this dict as the rest of the script depends on them
-            else:
-                # make a dict containing the innards of the Long file and pass PLUS df to panel_dataframe, if it exists
-                logfile_text = "Parsing Long file"
-                log_array.append(logfile_text)
-                long_file_df_dict = long_file_to_array(
-                    illumina_data_df, logfile, file_name
-                )
-                if "PLUS" in long_file_df_dict:
-                    panel_dataframe = long_file_df_dict["PLUS"]
-                else:
-                    panel_dataframe = illumina_data_df
-    # Find corresponding var file
-    converting_file = False
-    if panel_dataframe is None:
-        exit("something went wrong creating the snp panel dataframe")
-    timestr = time.strftime("%H:%M:%S")
-    logfile_text = timestr + " ..... Finding the matching variant file "
-    log_array.append(logfile_text)
-    var_list, log_text, alt_bool = vff.var_match(
-        variant_files,
-        variant_directory,
-        panel_dataframe,
-        file_name,
-        converting_file,
-        assembly,
-        species,
-    )
-    for text in log_text:
-        log_array.append(text)
-    var_df = vff.get_var_df(variant_directory, var_list[0], assembly, species, alt_bool)
-    #  Check if PLUS format exists, and if not, convert long fwd format to plus (or whatever format exists)
-    if file_type == "LONG":
-        if "PLUS" not in long_file_df_dict:
-            # make PLUS dataframe # SHOVE FILE INTO FILE CONVERSION AND CONVERT TO PLUS FORMAT
-            # use long_as_matrix
-            df_for_conversion, matrix_type, logfile = fc.long_as_matrix(
-                illumina_data_df, file_name, logfile
-            )
-            out_type_for_long = "PLUS"
-            converted_df, column_names, logfile = fc.split_and_convert(
-                df_for_conversion,
-                var_df,
-                matrix_type,
-                out_type_for_long,
-                can_we_thread,
-                n_threads,
-                file_name,
-                logfile,
-            )
-            reordered_df, logfile = fc.reorder_converted_df(
-                converted_df,
-                column_names,
-                illumina_data_df,
-                out_type_for_long,
-                out_type_for_long,
-                file_name,
-                logfile,
-            )
-            reordered_df.rename({"": "Name"}, axis=1, inplace=True)
-            panel_dataframe = reordered_df
-    # Convert affymetrix file to AFFY-PLUS
-    if affy_flag is True:
-        matrix_type = "FWD"
-        converted_df, column_names, logfile = fc.split_and_convert(
-            panel_dataframe,
-            var_df,
-            matrix_type,
-            "PLUS",
-            can_we_thread,
-            n_threads,
-            file_name,
-            logfile,
-        )
-        reordered_df, logfile = fc.reorder_converted_df(
-            converted_df,
-            column_names,
-            panel_dataframe,
-            "FWD",
-            "PLUS",
-            file_name,
-            logfile,
-        )
-        reordered_df.rename(columns={"": "Name"}, inplace=True)
-        panel_dataframe = reordered_df
-
-    # Quick test user SNP panel
-    is_mixed = True
-    fmt = "PLUS"
-    logfile_text = "Checking the panel file format relative to the variant file"
-    log_array.append(logfile_text)
-    format_check, format_log_out = ffc.TFDP_format_check(
-        panel_dataframe, var_df, fmt, file_name, is_mixed, logfile
-    )
-    if format_check != 0:
-        message = (
-            "Quick format check may have found inaccuracies: run check_format module"
-        )
-        log_array.append(message)
-        atexit.register(make_logs.simple_log, log_array, file_name, format_log_out)
-        exit(message)
-    else:
-        logfile_text = "SNP panel file is correctly formatted"
-        log_array.append(logfile_text)
-    if affy_flag is False:
-        panel_dataframe_updated = update_snp_panel_names(panel_dataframe)
-    else:
-        panel_dataframe_updated = panel_dataframe
-    if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
-    return format_check, format_log_out, panel_dataframe_updated, var_df
-
-
-def subsampling_panel_and_varframe(panel_dataframe, variant_sub_dataframe, sample):
-    positional_df = panel_dataframe[["Name", sample]]
-
-    positional_df = pd.merge(
-        left=positional_df, right=variant_sub_dataframe, on="Name", how="left"
-    )
-    # Remove rows where there is no positional info (BLAST_chromosome and BLAST_position have '.' values)
-    pos_df_nullvals_only = positional_df[positional_df.BLAST_chromosome == "."]
-    pos_df_nullvals_removed = positional_df[positional_df.BLAST_chromosome != "."]
-    pos_df_nullvals_removed2 = pos_df_nullvals_removed[
-        pos_df_nullvals_removed.BLAST_position != "."
-    ]
-    pos_df_list = [pos_df_nullvals_removed2, pos_df_nullvals_only]
-    pos_df_dict = {sample: pos_df_list}
-    return pos_df_dict
-
-
-def get_snp_panel_positional_info(
-    panel_dataframe, var_dataframe, can_we_thread, n_threads, logfile, file_name
-):
-    """
-    Creates a dataframe for each animal containing BLAST chromosome & position info from the provided var dataframe
-    :param panel_dataframe: SNP user panel df obtained from the function check_input_snp_panel
-    :param var_dataframe: matching variant file df obtained from the function check_input_snp_panel and
-    associated functions var_match and get_var_df
-    :param can_we_thread: (bool) is threading allowed on machine
-    :param n_threads: number of threads to use
-    :param logfile: logfile
-    :param file_name: name of snp file for logging purposes
-    :return: hash of animal-specific dataframes containing position info
-    """
-    log_array = []
-    timestr = time.strftime("%H:%M:%S")
-    logfile_text = (
-        timestr + " ..... Getting chromosome and position information for SNPs "
-    )
-    log_array.append(logfile_text)
-    samples = list(panel_dataframe.columns)
-    samples.remove("Name")
-    variant_sub_dataframe = var_dataframe[
-        ["Name", "BLAST_chromosome", "BLAST_position"]
-    ]
-    positional_info_dict = {}
-    results_list = []
-    if can_we_thread is True:
-        with cf.ProcessPoolExecutor(max_workers=n_threads) as executor:
-            pos_df_dict = {
-                executor.submit(
-                    subsampling_panel_and_varframe,
-                    panel_dataframe,
-                    variant_sub_dataframe,
-                    each_sample,
-                ): each_sample
-                for each_sample in samples
-            }
-            for n in cf.as_completed(pos_df_dict):
-                data = n.result()
-                results_list.append(data)
-        for each_result in results_list:
-            key_list = list(each_result.keys())
-            each_sample = key_list[0]
-            positional_info_dict.update({each_sample: each_result[each_sample]})
-    else:
-        for each_sample in samples:
-            pos_df_dict = subsampling_panel_and_varframe(
-                panel_dataframe, variant_sub_dataframe, each_sample
-            )
-            positional_info_dict.update({each_sample: pos_df_dict[each_sample]})
-
-    # for each_sample in samples:
-    #    positional_df = panel_dataframe[['Name', each_sample]]
-    #
-    #        positional_df = pd.merge(left=positional_df, right=variant_sub_dataframe, on='Name', how='left')
-    #        # Remove rows where there is no positional info (BLAST_chromosome and BLAST_position have '.' values)
-    #        pos_df_nullvals_only = positional_df[positional_df.BLAST_chromosome == '.']
-    #        pos_df_nullvals_removed = positional_df[positional_df.BLAST_chromosome != '.']
-    #        pos_df_nullvals_removed = pos_df_nullvals_removed[pos_df_nullvals_removed.BLAST_position != '.']
-    #        positional_info_dict.update({each_sample: [pos_df_nullvals_removed, pos_df_nullvals_only]})
-    if logfile is not None:
-        logging = make_logs.simple_log(log_array, file_name, logfile)
-    return positional_info_dict, logfile
 
 
 def find_missing_samples(line, samples_strip):
@@ -2146,7 +1741,7 @@ Discordant subtypes: percentage of Total discordant"""
 # qual_crit = 0
 # filter_crit = ['PASS']
 
-
+###################################################################################3
 def concordance_analysis(
     variant_dir_path,
     assembly_input,
@@ -2164,14 +1759,14 @@ def concordance_analysis(
     species,
 ):
     # Get user panel files and variant files, and check that these exist
-    variant_file_list = retrieve_all_variant_files(
+    variant_file_list = gt.retrieve_all_variant_files(
         variant_dir_path, assembly_input, species
     )
     if not variant_file_list:
         exit("No variant conversion files in " + variant_dir_path)
 
     # Get SNP panel basename (file)
-    panel_path, snp_file = retrieve_user_input_file(snp_path)
+    panel_path, snp_file = gt.retrieve_user_input_file(snp_path)
 
     # Get log file name if verbose logging is true
     if verbose_logging:
@@ -2182,12 +1777,12 @@ def concordance_analysis(
         log_input = None
 
     # Check for threading
-    can_we_thread = check_user_platform()
+    can_we_thread = gt.check_user_platform()
 
     # Perform concordance analysis
     # Check inputs
     # Check file format of input file
-    format_check_val, logfile_out1, panel_df, variant_file_df = check_input_snp_panel(
+    format_check_val, logfile_out1, panel_df, variant_file_df = gt.check_input_snp_panel(
         panel_path,
         snp_file,
         file_type_input,
@@ -2201,13 +1796,13 @@ def concordance_analysis(
     )
     # Format check has passed
     # Create a dict of per-animal dataframes that have BLAST chromosome & position info from var file
-    position_dict, logfile_out2 = get_snp_panel_positional_info(
+    position_dict, logfile_out2 = gt.get_snp_panel_positional_info(
         panel_df, variant_file_df, can_we_thread, n_threads, logfile_out1, snp_file
     )
     # First subsample vcf file using the panel-specific position info
     samples_list = list(panel_df.columns)
     samples_list.remove("Name")
-    if file_type_input != "affymetrix":
+    if file_type_input != "AFFY":
         update_col_dict = {}
         for colname in samples_list:
             new_name = colname + ".1"
@@ -2304,8 +1899,8 @@ if __name__ == "__main__":
         "--panel-type",
         type=str,
         required=True,
-        choices=["TOP", "FWD", "AB", "PLUS", "DESIGN", "LONG", "affymetrix"],
-        help="Type of panel file: 'TOP', 'FWD', 'AB', 'PLUS', 'DESIGN', 'LONG', 'affymetrix'",
+        choices=["TOP", "FWD", "AB", "PLUS", "DESIGN", "LONG", "AFFY"],
+        help="Type of panel file: 'TOP', 'FWD', 'AB', 'PLUS', 'DESIGN', 'LONG', 'AFFY'",
     )
     parser.add_argument(
         "--vcf-file",
@@ -2314,7 +1909,7 @@ if __name__ == "__main__":
         help="Name or path to the VCF file containing genotype information",
     )
     parser.add_argument(
-        "--key-dir",
+        "--conversion",
         type=str,
         required=False,
         default="variant_position_files",
@@ -2324,14 +1919,13 @@ if __name__ == "__main__":
         "--assembly",
         type=str,
         required=True,
-        help="Assembly name which must be included in genotype conversion file name",
+        help="Assembly name (see README for all available choices)",
     )
     parser.add_argument(
         "--species",
         required=True,
         type=str,
-        choices=["bos_taurus", "sus_scrofa"],
-        help="Organism name",
+        help="Species name (see README for all available choices)",
     )
     parser.add_argument(
         "--filter-vcf",
@@ -2395,66 +1989,67 @@ if __name__ == "__main__":
         type=int,
         default=2,
         required=False,
-        help="[optional] Number of threads to use during conversion (default = 2)",
+        help="[Optional] Number of threads to use during conversion (default = 2)",
     )
+if __name__ == "__main__":
 
-if len(sys.argv) == 1:
-    parser.print_help()
-    sys.exit(1)
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-# Error check input values
-species_assembly_correlation = errors.assembly_species_error(
-    args.key_dir, args.assembly, args.species
-)
-if not species_assembly_correlation:
-    exit(
-        "The assembly "
-        + args.assembly
-        + " is incompatible with species "
-        + args.species
-        + ". See README for acceptable "
-        "assemblies."
+    # Error check input values
+    species_assembly_correlation = errors.assembly_species_error(
+        args.conversion, args.assembly, args.species
     )
-
-if args.filter_vcf:
-    filter_or_qual_set = False
-    if args.qual is not None:
-        filter_or_qual_set = True
-    if args.filter is not None:
-        filter_or_qual_set = True
-    if not filter_or_qual_set:
+    if not species_assembly_correlation:
         exit(
-            "The --filter-vcf flag was invoked, but no FILTER or QUAL filter values were provided"
+            "The assembly "
+            + args.assembly
+            + " is incompatible with species "
+            + args.species
+            + ". See README for acceptable "
+            "assemblies."
         )
 
-try:
-    vcf_test = allel.read_vcf(args.vcf_file)
-except RuntimeError as rt_inst:
-    print("VCF file could not be opened: " + str(rt_inst))
-    exit()
+    if args.filter_vcf:
+        filter_or_qual_set = False
+        if args.qual is not None:
+            filter_or_qual_set = True
+        if args.filter is not None:
+            filter_or_qual_set = True
+        if not filter_or_qual_set:
+            exit(
+                "The --filter-vcf flag was invoked, but no FILTER or QUAL filter values were provided"
+            )
 
-# Parse filter value(s)
-if args.filter is not None:
-    filter_str = args.filter
-    filter_vals = filter_str.split(",")
-else:
-    filter_vals = []
+    try:
+        vcf_test = allel.read_vcf(args.vcf)
+    except RuntimeError as rt_inst:
+        print("VCF file could not be opened: " + str(rt_inst))
+        exit()
 
-output = concordance_analysis(
-    args.key_dir,
-    args.assembly,
-    args.snp_panel,
-    args.panel_type,
-    args.verbose_logging,
-    args.vcf_file,
-    args.filter_vcf,
-    args.qual,
-    filter_vals,
-    args.output,
-    args.output_type,
-    args.extract_discordant,
-    args.threads,
-    args.species,
-)
+    # Parse filter value(s)
+    if args.filter is not None:
+        filter_str = args.filter
+        filter_vals = filter_str.split(",")
+    else:
+        filter_vals = []
+
+    output = concordance_analysis(
+        args.conversion,
+        args.assembly,
+        args.snp_panel,
+        args.panel_type,
+        args.verbose_logging,
+        args.vcf,
+        args.filter_vcf,
+        args.qual,
+        filter_vals,
+        args.output,
+        args.output_type,
+        args.extract_discordant,
+        args.threads,
+        args.species,
+    )
