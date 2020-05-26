@@ -6,48 +6,49 @@ import lib.file_format_checker as ffc
 import lib.file_conversion as convert
 import lib.merge_snp_files as merge
 from lib.list_conversion_files import list_conversion_files as list_var_files
+import lib.errors as errors
+import allel
+import lib.genotype_concordance as genotype_concordance
+import lib.vcf_generator as vcf_generator
+
+# Input species and assembly error checking
+
+def species_assembly_error_check(conversion, assembly, species):
+    species_assembly_correlation = errors.assembly_species_error(
+        conversion, assembly, species
+    )
+    if not species_assembly_correlation:
+        exit(
+            "The assembly "
+            + assembly
+            + " is incompatible with species "
+            + species
+            + ". See README for acceptable "
+              "assemblies."
+        )
+    return True
 
 # Get cwd for --input-dir
 cwd = os.getcwd()
-# This script can call the file format checker and file conversion modules
+
+# Call all utilities using this module
 
 parent_parser = argparse.ArgumentParser(
-    add_help=False, description="Converts between Illumina matrix and long formats"
+    add_help=False, description="A selection of tools for working with "
+                                "genotype data from Illumina and Affymetrix "
+                                "SNP panels"
 )
 parser = argparse.ArgumentParser(
     add_help=True,
-    description="Converts between Illumina matrix and long formats. To see "
-    "the full usage for each Utility:  "
-    "./snp_convserion [Utility] --help",
+    description="A selection of tools for working with genotype data from "
+                "Illumina and Affymetrix SNP panels To see the full usage for "
+                "each Utility: "
+                "./snp_convserion [Utility] --help",
 )
 
-
-# Make general options
-general_group = parent_parser.add_argument_group("General options")
-general_group.add_argument(
-    "--input-dir",
-    type=str,
-    required=False,
-    default=cwd,
-    help="directory containing input file(s) (default directory: current working directory)",
-)
-general_group.add_argument(
-    "--file-list",
-    type=str,
-    help="[optional] comma-separated list of files in the input directory to be converted (no whitespace)",
-)
-general_group.add_argument(
-    "--input-format",
-    type=str,
-    choices=["TOP", "FWD", "AB", "LONG", "DESIGN", "PLUS", "mixed", "affymetrix"],
-    default="mixed",
-    help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'LONG', 'DESIGN', 'PLUS', 'mixed', or 'affymetrix'. "
-    "'mixed' may not be used when merging files.",
-)
-
-## Parsers for the 4 programs
+# Add subparsers
 subs = parser.add_subparsers(dest="command")
-subs.metavar = "Functions"
+subs.metavar = "Tools"
 sub_a = subs.add_parser(
     "check_format",
     parents=[parent_parser],
@@ -59,58 +60,79 @@ sub_b = subs.add_parser(
     help="Converts input file(s) to user-specified format",
 )
 sub_c = subs.add_parser(
-    "merge_files", parents=[parent_parser], help="Merges files of the same format"
+    "merge_files", parents=[parent_parser], help="Merges files of the same "
+                                                 "format"
 )
 
 sub_d = subs.add_parser(
-    "conversion_list", help="Lists all species and assembly names available"
+    "conversion_list", parents=[parent_parser], help="Lists all species and assembly names available"
 )
-sub_d.add_argument(
-    "--key-dir",
+
+sub_e = subs.add_parser(
+    "genotype_concordance", parents=[parent_parser], help="Determines concordance between SNP panel "
+                                 "genotypes and VCF file genotypes"
+)
+
+sub_f = subs.add_parser(
+    "vcf_generator", parents=[parent_parser], help="Converts SNP panel file to VCF format file"
+)
+
+# Check format options
+format_check_group = sub_a.add_argument_group("Format Check Options")
+format_check_group.add_argument(
+    "--input-dir",
     type=str,
-    default="variant_position_files",
-    help="Directory containing genotype conversion key files (default directory: variant_position_files)",
+    required=False,
+    default=cwd,
+    help="Directory containing input file(s) (default directory: current working directory)",
 )
-
-## Function-specific options
-# File conversion and file format checking
-
-format_group = sub_a.add_argument_group("File Format Check Options")
-format_group.add_argument(
+format_check_group.add_argument(
+    "--file-list",
+    type=str,
+    help="[Optional] Comma-separated list of input files in the input directory",
+)
+format_check_group.add_argument(
+    "--input-format",
+    type=str,
+    choices=["TOP", "FWD", "AB", "LONG", "DESIGN", "PLUS", "AFFY", 'AFFY-PLUS', 'mixed'],
+    default="mixed",
+    help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'LONG', 'DESIGN', 'PLUS', 'AFFY', AFFY-PLUS, or (default) 'mixed'"
+)
+format_check_group.add_argument(
     "--get-snp-panel",
     action="store_true",
     default=False,
     required=False,
-    help="[optional] Will determine which genotype conversion key files contain all SNPs in the input",
+    help="[Optional] Display the selected genotype conversion key file",
 )
-format_group.add_argument(
-    "--key-dir",
+format_check_group.add_argument(
+    "--conversion",
     type=str,
     default="variant_position_files",
     help="Directory containing genotype conversion key files (default directory: variant_position_files)",
 )
-format_group.add_argument(
-    "--species",
-    required=True,
-    type=str,
-    help="Species name (see README for all available choices)",
-)
-format_group.add_argument(
-    "-v",
-    "--verbose-logging",
-    action="store_true",
-    default=False,
-    required=False,
-    help="[optional] Write progress messages to an output *-[timestamp].log file",
-)
-format_group.add_argument(
+format_check_group.add_argument(
     "--assembly",
     type=str,
     required=True,
     help="Assembly name (see README for all available choices)",
 )
+format_check_group.add_argument(
+    "--species",
+    required=True,
+    type=str,
+    help="Species name (see README for all available choices)",
+)
+format_check_group.add_argument(
+    "-v",
+    "--verbose-logging",
+    action="store_true",
+    default=False,
+    required=False,
+    help="[Optional] Write progress messages to an output *-[timestamp].log file",
+)
 
-format_group.add_argument(
+format_check_group.add_argument(
     "-s",
     "--summary",
     action="store_true",
@@ -118,14 +140,14 @@ format_group.add_argument(
     required=False,
     help="Summarize converted SNP file in *_summary.txt file",
 )
-format_group.add_argument(
+format_check_group.add_argument(
     "--tabular",
     action="store_true",
     default=False,
     required=False,
     help="Output summary file in tabular format (default: False)",
 )
-format_group.add_argument(
+format_check_group.add_argument(
     "--plink",
     action="store_true",
     default=False,
@@ -133,8 +155,28 @@ format_group.add_argument(
     help="Creates PLINK flat files (PED and MAP) (default: False)",
 )
 
-# File conversion
+# Convert file options
 conversion_group = sub_b.add_argument_group("File Conversion Options")
+conversion_group.add_argument(
+    "--input-dir",
+    type=str,
+    required=False,
+    default=cwd,
+    help="Directory containing input file(s) (default directory: current working directory)",
+)
+conversion_group.add_argument(
+    "--file-list",
+    type=str,
+    help="[Optional] Comma-separated list of files in the input directory to be converted (no whitespace)",
+)
+conversion_group.add_argument(
+    "--input-format",
+    type=str,
+    choices=["TOP", "FWD", "AB", "LONG", "DESIGN", "PLUS", "mixed", "AFFY"],
+    default="mixed",
+    help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'LONG', 'DESIGN', 'PLUS', 'mixed', or 'AFFY'. "
+    "'mixed' may not be used when merging files.",
+)
 conversion_group.add_argument(
     "--output-format",
     type=str,
@@ -144,13 +186,14 @@ conversion_group.add_argument(
     "Only one type of output can be specified at a time. "
     "PLUS converts the data to the forward strand of the reference genome. "
     "LONG refers to the long-format Illumina file."
-    "AFFY-TOP refers to an Affymetrix-format file with PLUS alleles instead of Affy's native Forward alleles",
+    "AFFY-PLUS refers to an Affymetrix-format file with PLUS alleles instead of the native Affymetrix (FWD) format",
 )
+## TODO: check if we can convert affy plus back to affy format
 conversion_group.add_argument(
     "--output-name",
     type=str,
     default="output",
-    help="Suffix of output file, without file extension. File will be named [input_file].[output_name].txt "
+    help="Output file designation. File will be named [input_file].[output_name].txt "
     "(default = output)",
 )
 conversion_group.add_argument(
@@ -159,16 +202,13 @@ conversion_group.add_argument(
     type=int,
     default=2,
     required=False,
-    help="[optional] Number of threads to use during conversion (default = 2)"
-    "systems",
+    help="[Optional] Number of threads to use (default = 2)",
 )
 conversion_group.add_argument(
-    "-s",
-    "--summary",
-    action="store_true",
-    default=False,
-    required=False,
-    help="Summarize converted SNP file in *_summary.txt file",
+    "--conversion",
+    type=str,
+    default="variant_position_files",
+    help="Directory containing genotype conversion key files (default directory: variant_position_files)",
 )
 conversion_group.add_argument(
     "--assembly",
@@ -177,16 +217,18 @@ conversion_group.add_argument(
     help="Assembly name - see README for full list of choices",
 )
 conversion_group.add_argument(
-    "--key-dir",
-    type=str,
-    default="variant_position_files",
-    help="Directory containing genotype conversion key files (default directory: variant_position_files)",
-)
-conversion_group.add_argument(
     "--species",
     required=True,
     type=str,
     help="Species name (see README for all available choices)",
+)
+conversion_group.add_argument(
+    "-s",
+    "--summary",
+    action="store_true",
+    default=False,
+    required=False,
+    help="Summarize converted SNP file in *_summary.txt file",
 )
 conversion_group.add_argument(
     "--tabular",
@@ -201,7 +243,7 @@ conversion_group.add_argument(
     action="store_true",
     default=False,
     required=False,
-    help="[optional] Write output to both STDOUT and log file",
+    help="[Optional] Write output to both STDOUT and log file",
 )
 conversion_group.add_argument(
     "--plink",
@@ -211,11 +253,231 @@ conversion_group.add_argument(
     help="Creates PLINK flat files (PED and MAP) (default: False)",
 )
 
-
-# Merge files
-merge_group = sub_c.add_argument_group("Merge files Options")
+# Merge files options
+merge_group = sub_c.add_argument_group("Merge Files Options")
 merge_group.add_argument(
-    "--output-name", type=str, required=True, help="Name of merged file"
+    "--input-dir",
+    type=str,
+    required=False,
+    default=cwd,
+    help="Directory containing input file(s) (default directory: current working directory)",
+)
+merge_group.add_argument(
+    "--file-list",
+    type=str,
+    help="[Optional] Comma-separated list of files in the input directory to be converted (no whitespace)",
+)
+merge_group.add_argument(
+    "--input-format",
+    type=str,
+    choices=["TOP", "FWD", "AB", "LONG", "DESIGN", "PLUS", "mixed", "AFFY"],
+    default="mixed",
+    help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'LONG', 'DESIGN', 'PLUS', 'mixed', or 'AFFY'. "
+    "'mixed' may not be used when merging files.",
+)
+merge_group.add_argument(
+    "--output",
+    type=str,
+    required=True,
+    help="File name to write merged data"
+)
+
+# List the conversion options
+conversion_list_group = sub_d.add_argument_group("List Conversion File Options")
+
+conversion_list_group.add_argument(
+    "--conversion",
+    type=str,
+    default="variant_position_files",
+    help="Directory containing genotype conversion key files (default directory: variant_position_files)",
+)
+
+# Genotype concordance
+concordance_group = sub_e.add_argument_group("Genotype Concordance Options")
+concordance_group.add_argument(
+    "--input-dir",
+    type=str,
+    required=False,
+    default=cwd,
+    help="directory containing input file(s) (default directory: current working directory)",
+)
+concordance_group.add_argument(
+    "--snp-panel",
+    type=str,
+    required=True,
+    help="Name or path to the SNP panel file. Can be any Illumina or Affymetrix format",
+)
+## TODO: can genotype concordance handle affy plus?
+concordance_group.add_argument(
+    "--panel-type",
+    type=str,
+    required=True,
+    choices=["TOP", "FWD", "AB", "PLUS", "DESIGN", "LONG", "AFFY"],
+    help="Type of panel file: 'TOP', 'FWD', 'AB', 'PLUS', 'DESIGN', 'LONG', 'AFFY'",
+)
+concordance_group.add_argument(
+    "--vcf",
+    type=str,
+    required=True,
+    help="Name or path to the VCF file",
+)
+concordance_group.add_argument(
+    "--conversion",
+    type=str,
+    required=False,
+    default="variant_position_files",
+    help="Directory containing genotype conversion key files (default directory: variant_position_files)",
+)
+concordance_group.add_argument(
+    "--assembly",
+    type=str,
+    required=True,
+    help="Assembly name (see README for all available choices)",
+)
+concordance_group.add_argument(
+    "--species",
+    required=True,
+    type=str,
+    help="Species name (see README for all available choices)",
+)
+concordance_group.add_argument(
+    "--filter-vcf",
+    action="store_true",
+    default=False,
+    required=False,
+    help="[Optional] Use this flag to specify that the VCF file should be filtered on QUAL and/or FILTER values. "
+         "Must be used in conjunction with --qual and/or --filter parameters",
+)
+concordance_group.add_argument(
+    "--qual",
+    type=float,
+    required=False,
+    default=None,
+    help="[Optional] Only perform concordance analysis using variants with QUAL scores higher than this value. "
+         "Must be used in conjunction with the --filter-vcf flag",
+)
+concordance_group.add_argument(
+    "--filter",
+    type=str,
+    required=False,
+    default=None,
+    help="[Optional] Only perform concordance analysis using variants with these value(s) in the FILTER field. "
+         "Can be a single value or a comma-separated list. Must be used in conjunction with --filter-vcf flag",
+)
+concordance_group.add_argument(
+    "--output",
+    type=str,
+    required=False,
+    default="concordance",
+    help="[Optional] Output prefix to append to '_metastatistics.txt' and '_statistics.txt' files (default: "
+         "'concordance')",
+)
+concordance_group.add_argument(
+    "--output-type",
+    type=str,
+    required=False,
+    choices=["basic", "tabular", "pretty"],
+    default="tabular",
+    help="[Optional] Type of output for statistics file: basic (tsv, stats only), tabular (tsv with extra info), "
+         "pretty (nice formatting) (default: tabular)",
+)
+concordance_group.add_argument(
+    "-v",
+    "--verbose-logging",
+    action="store_true",
+    required=False,
+    default=False,
+    help="[Optional] Write program steps and errors to a log file",
+)
+concordance_group.add_argument(
+    "--extract-discordant",
+    action="store_true",
+    required=False,
+    default=False,
+    help="[Optional] Write discordant positions to a file called [snp-panel]_discordant.txt",
+)
+concordance_group.add_argument(
+    "-t",
+    "--threads",
+    type=int,
+    default=2,
+    required=False,
+    help="[Optional] Number of threads to use (default = 2)",
+)
+
+# VCF generator options
+vcf_generator_options = sub_f.add_argument_group("VCF Generator Options")
+vcf_generator_options.add_argument(
+    "--input-dir",
+    type=str,
+    required=False,
+    default=cwd,
+    help="directory containing input file(s) (default directory: current working directory)",
+)
+vcf_generator_options.add_argument(
+    "--snp-panel",
+    type=str,
+    required=True,
+    help="Name or path to the SNP panel file. Can be any Illumina or Affymetrix format",
+)
+vcf_generator_options.add_argument(
+    "--panel-type",
+    type=str,
+    choices=["TOP", "FWD", "AB", "DESIGN", "LONG", "PLUS", "AFFY"],
+    help="Type of panel file: 'TOP', 'FWD', 'AB', 'PLUS', 'DESIGN', 'LONG', 'AFFY'",
+)
+vcf_generator_options.add_argument(
+    "-v",
+    "--verbose-logging",
+    action="store_true",
+    default=False,
+    required=False,
+    help="[Optional] Write output to both STDOUT and log file",
+)
+vcf_generator_options.add_argument(
+    "--conversion",
+    type=str,
+    default="variant_position_files",
+    help="Directory containing genotype conversion key files (default = variant_position_files)",
+)
+vcf_generator_options.add_argument(
+    "--assembly",
+    type=str,
+    required=True,
+    help="Assembly name which must be included in genotype conversion file name",
+)
+vcf_generator_options.add_argument(
+    "--species",
+    required=True,
+    type=str,
+    choices=["bos_taurus", "sus_scrofa"],
+    help="Organism name",
+)
+vcf_generator_options.add_argument(
+    "--output",
+    required=False,
+    help="Full output file name to store VCF results (default: [input basename].vcf",
+)
+vcf_generator_options.add_argument(
+    "-t",
+    "--threads",
+    type=int,
+    default=2,
+    required=False,
+    help="[Optional] Number of threads to use if conversion to PLUS format is required (default = 2)",
+)
+vcf_generator_options.add_argument(
+    "-c",
+    "--compress",
+    action="store_true",
+    default=False,
+    help="Compress VCF output file with gzip (not bgzip)",
+)
+vcf_generator_options.add_argument(
+    "--discard-snp",
+    action="store_true",
+    default=False,
+    help="Set ID field values to '.' (default: ID field contains SNP marker names)",
 )
 
 
@@ -226,14 +488,18 @@ if len(sys.argv) == 1:
 args = parser.parse_args()
 if args.command != "conversion_list":
     input_dir = args.input_dir
-    if args.file_list is None:
-        file_list = os.listdir(input_dir)
-    else:
-        file_list = args.file_list
+    if args.command != "genotype_concordance" and args.command != "vcf_generator":
+        if args.file_list is None:
+            file_list = os.listdir(input_dir)
+        else:
+            file_list = args.file_list
 else:
     pass
 
+
+
 if args.command == "convert_file":
+    correlation_check = species_assembly_error_check(args.conversion, args.assembly, args.species)
     if args.input_format == "AB":
         exit("Cannot convert AB format to another format")
     output = convert.convert_file(
@@ -244,7 +510,7 @@ if args.command == "convert_file":
         args.output_name,
         args.threads,
         args.verbose_logging,
-        args.key_dir,
+        args.conversion,
         args.summary,
         args.assembly,
         args.tabular,
@@ -252,6 +518,7 @@ if args.command == "convert_file":
         args.plink,
     )
 elif args.command == "check_format":
+    correlation_check = species_assembly_error_check(args.conversion, args.assembly, args.species)
     # Send the appropriate commands to the format module
     log_file = None
     file_type, correct_format, return_log = ffc.file_format_check(
@@ -260,7 +527,7 @@ elif args.command == "check_format":
         args.input_format,
         args.get_snp_panel,
         args.verbose_logging,
-        args.key_dir,
+        args.conversion,
         log_file,
         args.assembly,
         args.summary,
@@ -278,7 +545,7 @@ elif args.command == "merge_files":
             sys.exit(kill_message)
         else:
             pass
-        if args.input_format == "affymetrix":
+        if args.input_format == "AFFY":
             output = merge.merge_affy_files(
                 input_dir, args.file_list, args.input_format, args.output_name
             )
@@ -288,6 +555,64 @@ elif args.command == "merge_files":
             )
 
 elif args.command == "conversion_list":
-    output = list_var_files(args.key_dir)
+    output = list_var_files(args.conversion)
+
+elif args.command == "genotype_concordance":
+    correlation_check = species_assembly_error_check(args.conversion, args.assembly, args.species)
+    if args.filter_vcf:
+        filter_or_qual_set = False
+        if args.qual is not None:
+            filter_or_qual_set = True
+        if args.filter is not None:
+            filter_or_qual_set = True
+        if not filter_or_qual_set:
+            exit(
+                "The --filter-vcf flag was invoked, but no FILTER or QUAL filter values were provided"
+            )
+
+    try:
+        vcf_test = allel.read_vcf(args.vcf)
+    except RuntimeError as rt_inst:
+        print("VCF file could not be opened: " + str(rt_inst))
+        exit()
+
+    # Parse filter value(s)
+    if args.filter is not None:
+        filter_str = args.filter
+        filter_vals = filter_str.split(",")
+    else:
+        filter_vals = []
+
+    output = genotype_concordance.concordance_analysis(
+        args.conversion,
+        args.assembly,
+        args.snp_panel,
+        args.panel_type,
+        args.verbose_logging,
+        args.vcf,
+        args.filter_vcf,
+        args.qual,
+        filter_vals,
+        args.output,
+        args.output_type,
+        args.extract_discordant,
+        args.threads,
+        args.species,
+    )
+elif args.command == "vcf_generator":
+    correlation_check = species_assembly_error_check(args.conversion, args.assembly, args.species)
+    vcf_generator.vcf_generator(
+        args.snp_panel,
+        args.conversion,
+        args.species,
+        args.assembly,
+        args.panel_type,
+        args.output,
+        args.threads,
+        args.verbose_logging,
+        args.compress,
+        args.discard_snp,
+    )
+
 else:
     pass
