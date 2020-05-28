@@ -1,2 +1,0 @@
-CHROM	POS	Name	Sample	VCF genotype	Panel genotype
-1	973200	AX-18001280	Sample7	CC	TC

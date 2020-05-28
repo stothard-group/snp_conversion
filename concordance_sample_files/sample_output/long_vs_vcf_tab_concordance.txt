@@ -1,6 +1,0 @@
-Checking SNP panel format
-Parsing Genotype GT info
-Allele conversion for sample Sample7
-Calculating metastatistics
-Calculating statistics for animal Sample7
-Statistics complete

@@ -1,7 +1,0 @@
-There are 2 animals in SNP panel.
-Of these, 1 (50.0%) are present in the genotype file.
-Animals in SNP panel and genotype file: Sample7
-Animals in SNP panel but not genotype file: Sample16
-There are 9976 probes found in the SNP panel and 268771 positions found in the genotype VCF file.
-2854 positions are found in both the SNP panel and genotype file, based on genomic location.
-This shared value represents 29.0% of all SNP panel positions and 1.0% of all genotype file positions.

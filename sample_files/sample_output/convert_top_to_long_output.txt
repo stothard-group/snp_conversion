@@ -1,5 +1,0 @@
-Checking file 50kv3_mTOP_14June2019.txt
-File 50kv3_mTOP_14June2019.txt is correctly formatted
-Checking file 50kv3_mTOP_14June2019.output.txt
-File 50kv3_mTOP_14June2019.output.txt is correctly formatted in Illumina LONG format
-File 50kv3_mTOP_14June2019.txt was converted properly
