@@ -1173,15 +1173,6 @@ def file_format_check(
     correct_format = False
     determined_ft = None
     log_input = None
-    # Deal with AFFY-PLUS as an input type
-    if specified_file_type == "AFFY-PLUS":
-        file_type = "PLUS"
-    else:
-        file_type = specified_file_type  # from here, only use file_type var
-    # Get affy_flag
-    affy_flag = False
-    if file_type == "AFFY" or specified_file_type == "AFFY-PLUS":
-        affy_flag = True
 
     # Get all input files
     snp_files_array, logfile = get_snp_files(file_list, input_dir, return_log)
@@ -1202,6 +1193,15 @@ def file_format_check(
                 log_input = None
         else:
             log_input = None
+        # Deal with AFFY-PLUS as an input type
+        if specified_file_type == "AFFY-PLUS":
+            file_type = "PLUS"
+        else:
+            file_type = specified_file_type  # from here, only use file_type var
+        # Get affy_flag
+        affy_flag = False
+        if file_type == "AFFY" or specified_file_type == "AFFY-PLUS":
+            affy_flag = True
         file_path = os.path.join(input_dir, file)
         error_log_text = []
         summary_inconsistency_value = int

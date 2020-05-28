@@ -295,13 +295,6 @@ conversion_list_group.add_argument(
 # Genotype concordance
 concordance_group = sub_e.add_argument_group("Genotype Concordance Options")
 concordance_group.add_argument(
-    "--input-dir",
-    type=str,
-    required=False,
-    default=cwd,
-    help="directory containing input file(s) (default directory: current working directory)",
-)
-concordance_group.add_argument(
     "--snp-panel",
     type=str,
     required=True,
@@ -408,13 +401,6 @@ concordance_group.add_argument(
 # VCF generator options
 vcf_generator_options = sub_f.add_argument_group("VCF Generator Options")
 vcf_generator_options.add_argument(
-    "--input-dir",
-    type=str,
-    required=False,
-    default=cwd,
-    help="directory containing input file(s) (default directory: current working directory)",
-)
-vcf_generator_options.add_argument(
     "--snp-panel",
     type=str,
     required=True,
@@ -487,8 +473,8 @@ if len(sys.argv) == 1:
 
 args = parser.parse_args()
 if args.command != "conversion_list":
-    input_dir = args.input_dir
     if args.command != "genotype_concordance" and args.command != "vcf_generator":
+        input_dir = args.input_dir
         if args.file_list is None:
             file_list = os.listdir(input_dir)
         else:
@@ -547,11 +533,11 @@ elif args.command == "merge_files":
             pass
         if args.input_format == "AFFY":
             output = merge.merge_affy_files(
-                input_dir, args.file_list, args.input_format, args.output_name
+                input_dir, args.file_list, args.input_format, args.output
             )
         else:
             output = merge.merge_matrix_files(
-                input_dir, args.file_list, args.input_format, args.output_name
+                input_dir, args.file_list, args.input_format, args.output
             )
 
 elif args.command == "conversion_list":
