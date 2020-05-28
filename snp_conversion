@@ -270,9 +270,9 @@ merge_group.add_argument(
 merge_group.add_argument(
     "--input-format",
     type=str,
-    choices=["TOP", "FWD", "AB", "LONG", "DESIGN", "PLUS", "mixed", "AFFY"],
+    choices=["TOP", "FWD", "AB", "LONG", "DESIGN", "PLUS", "AFFY"],
     default="mixed",
-    help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'LONG', 'DESIGN', 'PLUS', 'mixed', or 'AFFY'. "
+    help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'LONG', 'DESIGN', 'PLUS', or 'AFFY'. "
     "'mixed' may not be used when merging files.",
 )
 merge_group.add_argument(
@@ -521,6 +521,7 @@ elif args.command == "check_format":
         args.species,
         args.plink,
     )
+## TODO: Check if we can merge affy plus
 elif args.command == "merge_files":
     if not args.input_format:
         kill_message = "The following argument is required: --input-format"
