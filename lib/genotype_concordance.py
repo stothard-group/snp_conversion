@@ -13,6 +13,7 @@ import time
 import platform
 import concurrent.futures as cf
 import gzip
+from collections import OrderedDict
 
 # This module performs a concordance check of a SNP panel with genotype data in a vcf file
 
@@ -843,8 +844,9 @@ def get_metastats_numbers(
         round((len(comp_dict) / len(samp_list_total) * 100), 0)
     )  # percent of samples in snp panel
     # and vcf compared to total samples
+    OD_comp_dict = OrderedDict(comp_dict)
     both_string = ", ".join(
-        list(comp_dict.keys())
+        list(OD_comp_dict.keys())
     )  # list - all animals in both panel and vcf
     snp_only_string = ", ".join(
         panel_only_samples
