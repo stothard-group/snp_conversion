@@ -82,6 +82,7 @@ new_files=($( find ${new_output} -type f -print0 | perl -ne 'my @files = split(/
 ignore_line='Conversion time for file.+'
 ignore_line2='.+Checking the format of the SNP panel'
 ignore_line3='.+Finding the matching variant file'
+ignore_line4='.+filedate.+'
 
 for (( i=0; i<${#new_files[@]}; i++ ));
 do
@@ -110,7 +111,7 @@ do
 		# compare non-log files
 		echo "Comparing ${old_file} to ${new_files[$i]}"
 		set +e
-		diff -u -I='[Conversion time for file *]' ${old_file} ${new_files[$i]}
+		diff -u -I '[Conversion time for file *]' -I '.+Checking the format of the SNP panel' -I '.+Finding the matching variant file' -I '.+filedate.+' ${old_file} ${new_files[$i]}
 		if [[ $? -eq 0 ]]; then
 			echo "No differences found"
 		fi
