@@ -42,7 +42,7 @@ def get_ref_alt_values(
     generic_position_df = generic_position_df_list[0]
     # Read in var file ref and alt data
     converting_file = True
-    var_match_list_out, mod_verbose_log, alt_bool = var_match(
+    var_match_list_out, mod_verbose_log, reg_alt_bool_dict = var_match(
         variant_file_list,
         conversion_dir,
         generic_position_df,
@@ -51,46 +51,66 @@ def get_ref_alt_values(
         assembly,
         species,
     )
-    var_species_path = os.path.join(conversion_dir, species)
-    var_assembly_path = os.path.join(var_species_path, assembly)
-    filepath = os.path.join(var_assembly_path, var_match_list_out[0])
-    header_count = uncompressing(filepath)
-    whole_var_df = pd.read_csv(
-        filepath, header=0, skiprows=header_count, compression="infer"
-    )
-    df_ref = whole_var_df[whole_var_df["VCF"] == "REF"].copy()
-    df_alt = whole_var_df[whole_var_df["VCF"] == "ALT"].copy()
-    merged_df_ref_alt = pd.merge(df_ref, df_alt, on=["marker_name", "alt_marker_name"])
-    if alt_bool is True:
-        merged_df_ref_alt.drop(columns=["marker_name"], inplace=True)
-        merged_df_ref_alt.rename(
-            columns={"alt_marker_name": "marker_name"}, inplace=True
+    concat_df_list = []
+    for var_file in var_match_list_out:
+        if reg_alt_bool_dict[var_file] == "reg":
+            alt_bool = False
+        else:
+            alt_bool = True
+        var_species_path = os.path.join(conversion_dir, species)
+        var_assembly_path = os.path.join(var_species_path, assembly)
+        filepath = os.path.join(var_assembly_path, var_file)
+        header_count = uncompressing(filepath)
+        whole_var_df = pd.read_csv(
+            filepath, header=0, skiprows=header_count, compression="infer"
         )
-    ref_alt_df = merged_df_ref_alt[["marker_name", "PLUS_x", "PLUS_y"]].copy()
-    add_ref_alt_df = pd.merge(
-        generic_position_df,
-        ref_alt_df,
-        left_on="Name",
-        right_on="marker_name",
-        how="outer",
+
+        df_ref = whole_var_df[whole_var_df["VCF"] == "REF"].copy()
+        df_alt = whole_var_df[whole_var_df["VCF"] == "ALT"].copy()
+        merged_df_ref_alt = pd.merge(df_ref, df_alt, on=["marker_name", "alt_marker_name"])
+        if alt_bool is True:
+            ref_alt_df = merged_df_ref_alt[["alt_marker_name", "PLUS_x", "PLUS_y"]].copy()
+            add_ref_alt_df = pd.merge(
+                generic_position_df,
+                ref_alt_df,
+                left_on="Name",
+                right_on="alt_marker_name",
+                how="outer",
+            )
+            merged_df_ref_alt.drop(columns=["marker_name"], inplace=True)
+            merged_df_ref_alt.rename(
+                columns={"alt_marker_name": "marker_name"}, inplace=True
+            )
+        else:
+            ref_alt_df = merged_df_ref_alt[["marker_name", "PLUS_x", "PLUS_y"]].copy()
+            add_ref_alt_df = pd.merge(
+                generic_position_df,
+                ref_alt_df,
+                left_on="Name",
+                right_on="marker_name",
+                how="outer",
+            )
+        combined_df = add_ref_alt_df[
+            ["Name", "BLAST_chromosome", "BLAST_position", "PLUS_x", "PLUS_y"]
+        ].copy()
+        combined_df.rename(
+            columns={
+                "Name": "ID",
+                "BLAST_chromosome": "#CHROM",
+                "BLAST_position": "POS",
+                "PLUS_x": "REF",
+                "PLUS_y": "ALT",
+            },
+            inplace=True,
+        )
+        arranged_cols = ["#CHROM", "POS", "ID", "REF", "ALT"]
+        rearranged_df = combined_df[arranged_cols].copy()
+        rearranged_df.dropna(inplace=True)
+        concat_df_list.append(rearranged_df)
+    merged_df_final = reduce(
+        lambda left, right: pd.merge(left, right, how="outer", on=["#CHROM", "POS", "ID", 'REF', 'ALT']), concat_df_list
     )
-    combined_df = add_ref_alt_df[
-        ["Name", "BLAST_chromosome", "BLAST_position", "PLUS_x", "PLUS_y"]
-    ].copy()
-    combined_df.rename(
-        columns={
-            "Name": "ID",
-            "BLAST_chromosome": "#CHROM",
-            "BLAST_position": "POS",
-            "PLUS_x": "REF",
-            "PLUS_y": "ALT",
-        },
-        inplace=True,
-    )
-    arranged_cols = ["#CHROM", "POS", "ID", "REF", "ALT"]
-    rearranged_df = combined_df[arranged_cols].copy()
-    rearranged_df.dropna(inplace=True)
-    return rearranged_df, logfile
+    return merged_df_final, logfile
 
 
 def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfile):
@@ -225,6 +245,8 @@ def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfi
     else:
         pass
     vcf_out = vcf_df_working.astype({"POS": "int"})
+
+    ## TODO: sort values in CHROM column
     if logfile:
         logfile = simple_log(log_array, filename, logfile)
     return vcf_out, logfile

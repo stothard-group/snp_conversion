@@ -16,11 +16,12 @@ import lib.plink_output as make_plink
 import time
 import atexit
 
-
 #####################################################################################################################
 # This value controls the minimum fraction of correct SNPs required for the program to determine the file input type,
 # if the input type is not given (or is 'mixed')
 minimum_correct_snp_fraction = 0.95
+
+
 #####################################################################################################################
 
 
@@ -79,8 +80,8 @@ def get_snp_files(file_list, input_dir, logfile):
     non_txt_files = errors.non_txt_fmt_input_files(snp_files_array)
     if non_txt_files:
         message = (
-            "The following files are not .txt files are are excluded from analysis: "
-            + ", ".join(non_txt_files)
+                "The following files are not .txt files are are excluded from analysis: "
+                + ", ".join(non_txt_files)
         )
         warnings.warn(message, stacklevel=4)
         for non_txt in non_txt_files:
@@ -313,7 +314,7 @@ def get_long_df_dict(long_df, header_row, header_dict, numbers_exist, file, logf
         # Make sure allele type exists
         if out1 not in long_df.columns or out2 not in long_df.columns:
             message = (
-                "Columns " + out1 + " and " + out2 + " might not be in the input file"
+                    "Columns " + out1 + " and " + out2 + " might not be in the input file"
             )
             warnings.warn(message, stacklevel=4)
         else:
@@ -338,7 +339,7 @@ def get_long_df_dict(long_df, header_row, header_dict, numbers_exist, file, logf
 
 
 def check_illumina_df_header(
-    illumina_df, header_row, header_dict, numbers_exist, file, logfile
+        illumina_df, header_row, header_dict, numbers_exist, file, logfile
 ):
     """
     Checks Illumina dataframe header
@@ -478,8 +479,8 @@ def TFDP_format_check(dataframe, var_dataframe, fmt, in_file, is_mixed, log):
         super_compare_df.drop(columns="Exist", inplace=True)
         # Write to log if there are inconsistent values
         if (
-            not super_compare_df[super_compare_df["SuperExist"] == 1].empty
-            and is_mixed is False
+                not super_compare_df[super_compare_df["SuperExist"] == 1].empty
+                and is_mixed is False
         ):
             # check that we still only have allowed values
             write_log = make_logs.inconsistent_values(
@@ -542,13 +543,13 @@ def TFDP_format_check(dataframe, var_dataframe, fmt, in_file, is_mixed, log):
 
 
 def check_affy_format(
-    affy_df,
-    var_df,
-    specified_file_type,
-    file,
-    file_type,
-    summary_inconsistency_value,
-    logfile,
+        affy_df,
+        var_df,
+        specified_file_type,
+        file,
+        file_type,
+        summary_inconsistency_value,
+        logfile,
 ):
     """
     Check format of an AFFY dataframe using TFDR
@@ -843,7 +844,7 @@ def check_long_format(long_df_dict, long_df, var_df, file, logfile):
 
 
 def check_illumina_matrix_format(
-    illumina_df, var_df, file_type, file, is_mixed, header_row, header_dict, logfile
+        illumina_df, var_df, file_type, file, is_mixed, header_row, header_dict, logfile
 ):
     """
     Puts Illumina matrix df through AB_check and TFDP
@@ -876,7 +877,7 @@ def check_illumina_matrix_format(
                 out_string = "AB file is incorrectly formatted - see log for details"
             else:
                 out_string = (
-                    "File " + file + " is correctly formatted in Illumina AB format"
+                        "File " + file + " is correctly formatted in Illumina AB format"
                 )
                 filetype_out = "AB"
                 correct_format = True
@@ -890,7 +891,7 @@ def check_illumina_matrix_format(
                 out_string = "TOP file is incorrectly formatted - see log for details"
             else:
                 out_string = (
-                    "File " + file + " is correctly formatted in Illumina TOP format"
+                        "File " + file + " is correctly formatted in Illumina TOP format"
                 )
                 filetype_out = "TOP"
                 correct_format = True
@@ -904,9 +905,9 @@ def check_illumina_matrix_format(
                 out_string = "FWD file is incorrectly formatted - see log for details"
             else:
                 out_string = (
-                    "File "
-                    + file
-                    + " is correctly formatted in Illumina FORWARD format"
+                        "File "
+                        + file
+                        + " is correctly formatted in Illumina FORWARD format"
                 )
                 filetype_out = "FWD"
                 correct_format = True
@@ -922,7 +923,7 @@ def check_illumina_matrix_format(
                 )
             else:
                 out_string = (
-                    "File " + file + " is correctly formatted in Illumina DESIGN format"
+                        "File " + file + " is correctly formatted in Illumina DESIGN format"
                 )
                 correct_format = True
                 filetype_out = "DESIGN"
@@ -936,7 +937,7 @@ def check_illumina_matrix_format(
                 out_string = "PLUS file is incorrectly formatted - see log for details"
             else:
                 out_string = (
-                    "File " + file + " is correctly formatted in Illumina PLUS format"
+                        "File " + file + " is correctly formatted in Illumina PLUS format"
                 )
                 correct_format = True
                 filetype_out = "PLUS"
@@ -1000,7 +1001,7 @@ def check_illumina_matrix_format(
             summary_inconsistency_value = try_PLUS_format
         elif try_DESIGN_format == 0:
             message = (
-                "File " + file + " is correctly formatted in Illumina DESIGN format"
+                    "File " + file + " is correctly formatted in Illumina DESIGN format"
             )
             print(message)
             log_array.append(message)
@@ -1025,11 +1026,11 @@ def check_illumina_matrix_format(
             min_snps = round(minimum_correct_snp_fraction * n_snps)
             if try_AB_format == x and try_AB_format < min_snps:
                 message = (
-                    "File "
-                    + file
-                    + " may be in AB format with "
-                    + str(try_AB_format)
-                    + " inconsistent SNP(s)"
+                        "File "
+                        + file
+                        + " may be in AB format with "
+                        + str(try_AB_format)
+                        + " inconsistent SNP(s)"
                 )
                 print(message)
                 log_array.append(message)
@@ -1038,11 +1039,11 @@ def check_illumina_matrix_format(
                 summary_inconsistency_value = try_AB_format
             elif try_TOP_format == x and try_TOP_format < min_snps:
                 message = (
-                    "File "
-                    + file
-                    + " may be in TOP format with "
-                    + str(try_TOP_format)
-                    + " inconsistent SNP(s)"
+                        "File "
+                        + file
+                        + " may be in TOP format with "
+                        + str(try_TOP_format)
+                        + " inconsistent SNP(s)"
                 )
                 print(message)
                 log_array.append(message)
@@ -1051,11 +1052,11 @@ def check_illumina_matrix_format(
                 summary_inconsistency_value = try_TOP_format
             elif try_FWD_format == x and try_FWD_format < min_snps:
                 message = (
-                    "File "
-                    + file
-                    + " may be in FWD format with "
-                    + str(try_FWD_format)
-                    + " inconsistent SNP(s)"
+                        "File "
+                        + file
+                        + " may be in FWD format with "
+                        + str(try_FWD_format)
+                        + " inconsistent SNP(s)"
                 )
                 print(message)
                 log_array.append(message)
@@ -1064,11 +1065,11 @@ def check_illumina_matrix_format(
                 summary_inconsistency_value = try_FWD_format
             elif try_PLUS_format == x and try_PLUS_format < min_snps:
                 message = (
-                    "File "
-                    + file
-                    + " may be in PLUS format with "
-                    + str(try_PLUS_format)
-                    + " inconsistent SNP(s)"
+                        "File "
+                        + file
+                        + " may be in PLUS format with "
+                        + str(try_PLUS_format)
+                        + " inconsistent SNP(s)"
                 )
                 print(message)
                 log_array.append(message)
@@ -1077,11 +1078,11 @@ def check_illumina_matrix_format(
                 summary_inconsistency_value = try_PLUS_format
             elif try_DESIGN_format == x and try_DESIGN_format < min_snps:
                 message = (
-                    "File "
-                    + file
-                    + " may be in DESIGN format with "
-                    + str(try_PLUS_format)
-                    + " inconsistent SNP(s)"
+                        "File "
+                        + file
+                        + " may be in DESIGN format with "
+                        + str(try_PLUS_format)
+                        + " inconsistent SNP(s)"
                 )
                 print(message)
                 log_array.append(message)
@@ -1090,9 +1091,9 @@ def check_illumina_matrix_format(
                 summary_inconsistency_value = try_DESIGN_format
             else:
                 message = (
-                    "File type for "
-                    + file
-                    + " could not be determined: too many SNPs with inconsistent formatting"
+                        "File type for "
+                        + file
+                        + " could not be determined: too many SNPs with inconsistent formatting"
                 )
                 print(message)
                 filetype_out = None
@@ -1120,13 +1121,10 @@ def snp_panel(var_ls, f):
     elif len(var_ls) > 1:
         var_string = ", ".join(var_ls)
         message = (
-            "SNPs from file "
-            + f
-            + " are found in variant files "
-            + var_string
-            + "\n"
-            + var_ls[0]
-            + " was used for analysis"
+                "SNPs from file "
+                + f
+                + " are found in variant files "
+                + var_string
         )
         print(message)
         error_text.append(message)
@@ -1140,18 +1138,18 @@ def snp_panel(var_ls, f):
 
 #####################################################################################################################
 def file_format_check(
-    input_dir,
-    file_list,
-    specified_file_type,
-    get_snp_panel,
-    verbose_logging,
-    conversion_dir,
-    return_log,
-    assembly,
-    summarize,
-    tabular,
-    species,
-    make_ped_map,
+        input_dir,
+        file_list,
+        specified_file_type,
+        get_snp_panel,
+        verbose_logging,
+        conversion_dir,
+        return_log,
+        assembly,
+        summarize,
+        tabular,
+        species,
+        make_ped_map,
 ):
     """
     Main file format check function. Determines (or checks) the file format according to the variant position files
@@ -1248,7 +1246,7 @@ def file_format_check(
                 illumina_matrix_df = True
         # Get corresponding variant file
         converting_file = False
-        var_list, mod_verbose_log, alt_bool = var_match(
+        var_list, mod_verbose_log, reg_alt_bool_dict = var_match(
             variant_files,
             conversion_dir,
             generic_input_df,
@@ -1262,7 +1260,7 @@ def file_format_check(
         if log_input is not None:
             logging = make_logs.simple_log(error_log_text, file, logfile)
         var_df = get_var_df(
-            conversion_dir, var_list[0], assembly, species, alt_bool
+            conversion_dir, var_list, assembly, species, reg_alt_bool_dict
         )
 
         # If Affymetrix file, check in TFDP

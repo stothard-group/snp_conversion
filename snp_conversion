@@ -23,8 +23,8 @@ def species_assembly_error_check(conversion, assembly, species):
             + assembly
             + " is incompatible with species "
             + species
-            + ". See README for acceptable "
-              "assemblies."
+            + ". Use conversion_list tool "
+              "to find assemblies."
         )
     return True
 
@@ -115,13 +115,13 @@ format_check_group.add_argument(
     "--assembly",
     type=str,
     required=True,
-    help="Assembly name (see README for all available choices)",
+    help="Assembly name (use conversion_list tool for all available choices)",
 )
 format_check_group.add_argument(
     "--species",
     required=True,
     type=str,
-    help="Species name (see README for all available choices)",
+    help="Species name (use conversion_list tool for all available choices)",
 )
 format_check_group.add_argument(
     "-v",
@@ -214,13 +214,13 @@ conversion_group.add_argument(
     "--assembly",
     type=str,
     required=True,
-    help="Assembly name - see README for full list of choices",
+    help="Assembly name - use conversion_list tool for full list of choices",
 )
 conversion_group.add_argument(
     "--species",
     required=True,
     type=str,
-    help="Species name (see README for all available choices)",
+    help="Species name (use conversion_list tool for all available choices)",
 )
 conversion_group.add_argument(
     "-s",
@@ -325,13 +325,13 @@ concordance_group.add_argument(
     "--assembly",
     type=str,
     required=True,
-    help="Assembly name (see README for all available choices)",
+    help="Assembly name (use conversion_list tool for all available choices)",
 )
 concordance_group.add_argument(
     "--species",
     required=True,
     type=str,
-    help="Species name (see README for all available choices)",
+    help="Species name (use conversion_list tool for all available choices)",
 )
 concordance_group.add_argument(
     "--filter-vcf",
@@ -409,6 +409,7 @@ vcf_generator_options.add_argument(
 vcf_generator_options.add_argument(
     "--panel-type",
     type=str,
+    required=True,
     choices=["TOP", "FWD", "AB", "DESIGN", "LONG", "PLUS", "AFFY"],
     help="Type of panel file: 'TOP', 'FWD', 'AB', 'PLUS', 'DESIGN', 'LONG', 'AFFY'",
 )

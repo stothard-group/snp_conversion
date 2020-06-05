@@ -241,7 +241,7 @@ def check_input_snp_panel(
                 )
                 if file_type != "PLUS":
                     converting_file = False
-                    var_list, log_text, alt_bool = var_match(
+                    var_list, log_text, reg_alt_bool_dict = var_match(
                         variant_files,
                         variant_directory,
                         illumina_data_df,
@@ -253,7 +253,7 @@ def check_input_snp_panel(
                     for text in log_text:
                         log_array.append(text)
                     var_df = get_var_df(
-                        variant_directory, var_list[0], assembly, species, alt_bool
+                        variant_directory, var_list, assembly, species, reg_alt_bool_dict
                     )
                     matrix_type = file_type
                     output_type = "PLUS"
@@ -303,7 +303,7 @@ def check_input_snp_panel(
     timestr = time.strftime("%H:%M:%S")
     logfile_text = timestr + " ..... Finding the matching variant file "
     log_array.append(logfile_text)
-    var_list, log_text, alt_bool = var_match(
+    var_list, log_text, reg_alt_bool_dict = var_match(
         variant_files,
         variant_directory,
         panel_dataframe,
@@ -314,7 +314,7 @@ def check_input_snp_panel(
     )
     for text in log_text:
         log_array.append(text)
-    var_df = get_var_df(variant_directory, var_list[0], assembly, species, alt_bool)
+    var_df = get_var_df(variant_directory, var_list, assembly, species, reg_alt_bool_dict)
     #  Check if PLUS format exists, and if not, convert long fwd format to plus (or whatever format exists)
     if affy_flag is False:
         if file_type == "LONG":

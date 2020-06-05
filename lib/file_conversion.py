@@ -898,7 +898,7 @@ def convert_file(
             logging = simple_log(log_array_1, file, logfile2)
 
         converting_file = True
-        var_list, logfile2_text, alt_bool = var_match(
+        var_list, logfile2_text, reg_alt_bool_dict = var_match(
             variant_files,
             conversion_dir,
             file_df,
@@ -908,7 +908,7 @@ def convert_file(
             species,
         )
         var_df = get_var_df(
-            conversion_dir, var_list[0], assembly, species, alt_bool
+            conversion_dir, var_list, assembly, species, reg_alt_bool_dict
         )
 
         # Check file format
