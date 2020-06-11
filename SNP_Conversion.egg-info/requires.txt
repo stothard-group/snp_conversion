@@ -1,5 +1,0 @@
-numpy
-pandas
-python-dateutil
-scikit-allel
-toolz

@@ -1,7 +1,0 @@
-README.md
-setup.py
-SNP_Conversion.egg-info/PKG-INFO
-SNP_Conversion.egg-info/SOURCES.txt
-SNP_Conversion.egg-info/dependency_links.txt
-SNP_Conversion.egg-info/requires.txt
-SNP_Conversion.egg-info/top_level.txt
