@@ -9,7 +9,7 @@ setup(
     url="https://github.com/stothard-group/snp_conversion",
     version="2.0",
     packages=find_packages(include=['lib/*']),
-    install_requires=["numpy", "pandas", "python-dateutil", "scikit-allel", "toolz"],
+    install_requires=["numpy", "pandas", "python-dateutil", "scikit-allel", "toolz", "dask"],
     python_requires='>=3.6',
     classifiers=["Programming Language :: Python :: 3",
                  "Operating System :: Unix",
