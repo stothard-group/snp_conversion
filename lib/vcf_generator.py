@@ -113,6 +113,71 @@ def get_ref_alt_values(
     return merged_df_final, logfile
 
 
+def sort_vcf(vcf_unsorted):
+    """
+    Sorts vcf file on chromosome, then position (numerical-sorted autosomes, X, Y, MT, contigs)
+    :param vcf_unsorted: unsorted vcf file dataframe
+    :return: sorted vcf file dataframe
+    """
+    chrom_list = vcf_unsorted["#CHROM"].to_list()
+    reduced_chrom_list = list(set(chrom_list))
+    int_list = []
+    str_list = []
+    contigs = False
+    for val in reduced_chrom_list:
+        try:
+            i = int(val)
+            int_list.append(i)
+        except ValueError as verr:
+            str_list.append(val)
+            if val != "MT" and val != "X" and val != "Y":
+                contigs = True
+            else:
+                contigs = False
+    # Now we have ints and strings
+    print(int_list)
+    int_str_list = []
+    for int_val in int_list:
+        int_str_list.append(str(int_val))
+    sub_int_df = vcf_unsorted[vcf_unsorted["#CHROM"].isin(int_str_list)].copy()
+    print(sub_int_df)
+    sub_str_df = vcf_unsorted[vcf_unsorted["#CHROM"].isin(str_list)].copy()
+    # Sort int dataframe on chrom and pos
+    typed_sub_int_df = sub_int_df.astype(dtype={"#CHROM": int})
+    sorted_int_df = typed_sub_int_df.sort_values(["#CHROM", "POS"], ascending=(True, True))
+    ob_typed_sub_int_df = sorted_int_df.astype(dtype={"#CHROM": object})
+    print(ob_typed_sub_int_df)
+    x_df = sub_str_df[sub_str_df["#CHROM"] == "X"]
+    y_df = sub_str_df[sub_str_df["#CHROM"] == "Y"]
+    mt_df = sub_str_df[sub_str_df["#CHROM"] == "MT"]
+    if contigs:
+        xymt_list = ["X", "Y", "MT"]
+        contigs_df = sub_str_df[~sub_str_df.isin(xymt_list)].copy()
+    if not x_df.empty:
+        x_df.sort_values(["POS"], ascending=True, inplace=True)
+        sdf1 = pd.concat([ob_typed_sub_int_df, x_df])
+    else:
+        sdf1 = ob_typed_sub_int_df.copy()
+    if not y_df.empty:
+        y_df.sort_values(["POS"], ascending=True, inplace=True)
+        sdf2 = pd.concat([sdf1, y_df])
+    else:
+        sdf2 = sdf1.copy()
+    if not mt_df.empty:
+        mt_df.sort_values(["POS"], ascending=True, inplace=True)
+        sdf3 = pd.concat([sdf2, mt_df])
+    else:
+        sdf3 = sdf2.copy()
+    if contigs:
+        contigs_df.sort_values(["POS"], ascending=True, inplace=True)
+        sorted_vcf = pd.concat([sdf3, contigs_df])
+    else:
+        sorted_vcf = sdf3.copy()
+    print("this happens")
+    print(sorted_vcf)
+    return sorted_vcf
+
+
 def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfile):
     """
     Converts bases in each animal dataframe to a numeric genotype format: 0/0 hom ref, 0/1 het, 1/1 hom alt.
@@ -244,12 +309,13 @@ def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfi
         vcf_df_working.ID = "."
     else:
         pass
-    vcf_out = vcf_df_working.astype({"POS": "int"})
+    vcf_out_unsorted = vcf_df_working.astype({"POS": "int"})
 
     ## TODO: sort values in CHROM column
+    vcf_out_sorted = sort_vcf(vcf_out_unsorted)
     if logfile:
         logfile = simple_log(log_array, filename, logfile)
-    return vcf_out, logfile
+    return vcf_out_sorted, logfile
 
 
 def write_vcf_file(
