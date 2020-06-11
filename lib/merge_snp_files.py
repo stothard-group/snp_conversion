@@ -132,7 +132,7 @@ def merge_affy_files(input_dir, input_files, input_type, outfile_name):
         # get all files in directory using file list
         snp_files_array = input_files.split(",")
     df_list = []
-    if input_type == "AFFY":
+    if input_type == "AFFY" or input_type == 'AFFY-PLUS':
         for affy_file in snp_files_array:
             affy_file_path = os.path.join(input_dir, affy_file)
             affy_df = pd.read_csv(affy_file_path, sep="\t", mangle_dupe_cols=True)
@@ -247,7 +247,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     log_file = None
-    if args.input_format == "AFFY":
+    if args.input_format == "AFFY" or args.input_format == 'AFFY-PLUS':
         output = merge_affy_files(
             args.input_dir, args.file_list, args.input_format, args.output_name
         )

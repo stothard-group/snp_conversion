@@ -212,7 +212,7 @@ def check_input_snp_panel(
     panel_dataframe = None
     long_file_df_dict = {}
     # test for affymetrix file
-    if file_type == "AFFY":
+    if file_type == "AFFY" or file_type == "AFFY-PLUS":
         affy_flag = True
     else:
         affy_flag = False
@@ -350,28 +350,31 @@ def check_input_snp_panel(
             pass
     # Convert affymetrix file to AFFY-PLUS
     else:
-        matrix_type = "FWD"
-        converted_df, column_names, logfile = fc.split_and_convert(
-            panel_dataframe,
-            var_df,
-            matrix_type,
-            "PLUS",
-            can_we_thread,
-            n_threads,
-            file_name,
-            logfile,
-        )
-        reordered_df, logfile = fc.reorder_converted_df(
-            converted_df,
-            column_names,
-            panel_dataframe,
-            "FWD",
-            "PLUS",
-            file_name,
-            logfile,
-        )
-        reordered_df.rename(columns={"": "Name"}, inplace=True)
-        panel_dataframe = reordered_df
+        if file_type == "AFFY":
+            matrix_type = "FWD"
+            converted_df, column_names, logfile = fc.split_and_convert(
+                panel_dataframe,
+                var_df,
+                matrix_type,
+                "PLUS",
+                can_we_thread,
+                n_threads,
+                file_name,
+                logfile,
+            )
+            reordered_df, logfile = fc.reorder_converted_df(
+                converted_df,
+                column_names,
+                panel_dataframe,
+                "FWD",
+                "PLUS",
+                file_name,
+                logfile,
+            )
+            reordered_df.rename(columns={"": "Name"}, inplace=True)
+            panel_dataframe = reordered_df
+        else:
+            pass
 
     # Quick test user SNP panel
     is_mixed = True

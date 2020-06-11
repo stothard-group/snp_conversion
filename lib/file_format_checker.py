@@ -571,16 +571,40 @@ def check_affy_format(
         is_mixed = False
     if specified_file_type == "AFFY-PLUS":
         affy_fmt = "PLUS"
+        test_both = False
     elif specified_file_type == "AFFY":
         affy_fmt = "FWD"
+        test_both = False
     else:
-        affy_fmt = (
-            "FWD"  # most likely mixed format (not from the check post-file-conversion)
+        test_both = True
+    if is_mixed or test_both:
+
+        affy_fmt = "FWD"
+        format_check_fwd, logfile_name = TFDP_format_check(
+            affy_df, var_df, affy_fmt, file, is_mixed, logfile
         )
-    format_check, logfile_name = TFDP_format_check(
-        affy_df, var_df, affy_fmt, file, is_mixed, logfile
-    )
-    summary_inconsistency_value = format_check
+        affy_fmt = "PLUS"
+        format_check_plus, logfile_name = TFDP_format_check(
+            affy_df, var_df, affy_fmt, file, is_mixed, logfile
+        )
+        if format_check_fwd == 0:
+            summary_inconsistency_value = format_check_fwd
+            affy_fmt = "FWD"
+            format_check = format_check_fwd
+        elif format_check_plus == 0:
+            summary_inconsistency_value = format_check_plus
+            affy_fmt = "PLUS"
+            format_check = format_check_plus
+        else:
+            summary_inconsistency_value = format_check_fwd
+            affy_fmt = "FWD"
+            format_check = format_check_fwd
+
+    else:
+        format_check, logfile_name = TFDP_format_check(
+            affy_df, var_df, affy_fmt, file, is_mixed, logfile
+        )
+        summary_inconsistency_value = format_check
     if format_check > 0:
         if is_mixed is False:
             out_string = (

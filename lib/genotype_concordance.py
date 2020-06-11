@@ -896,6 +896,10 @@ def count_ref_or_alt(hom_df, animal_snp_name):
     :param animal_snp_name: the SNP panel name of the animal which we split and compare to REF or ALT from vcf
     :return: a list, [number of homozygous reference alleles, number of homozygous alternate alleles]
     """
+    if hom_df.empty:
+        exit("There are no matches of homozygous SNPs to REF or ALT information in the VCF file. "
+             "This may suggest that the assembly used to generate the VCF file is not "
+             "the same as the one used to generate the SNP panel file")
     hom_df["A1"], hom_df["A2"] = zip(*hom_df[animal_snp_name].apply(lambda x: list(x)))
     hom_df["ref_true"] = (hom_df["A1"] == hom_df["REF"]).astype(int)
     ref_true_count = hom_df["ref_true"].sum()
@@ -1719,23 +1723,6 @@ Discordant subtypes: percentage of Total discordant"""
     return True
 
 
-# Old options for testing
-# input_name = "G_CCGP_downsampled.txt"
-# input_name = "G_CCGP_incorrect_homozygous2.txt"
-# input_name = "G_CCGP_very_downsampled.txt"
-# input_name = "G_CCGP_wrongrow1.txt"
-# variant_dir_path = "variant_position_files"
-# assembly_input = "ARS-UCD1.2"
-# log_input = None
-# file_type_input = 'affymetrix'
-# genotype_input = os.path.join('genotyping', 'SNPs_reduced_7M.recode.vcf')
-# output_type = 'pretty'
-# output_name = 'test_statistics.txt'
-# filter_conditions = True
-# make sure these get default values if they are not set
-# qual_crit = 0
-# filter_crit = ['PASS']
-
 ###################################################################################3
 def concordance_analysis(
     variant_dir_path,
@@ -1797,7 +1784,7 @@ def concordance_analysis(
     # First subsample vcf file using the panel-specific position info
     samples_list = list(panel_df.columns)
     samples_list.remove("Name")
-    if file_type_input != "AFFY":
+    if file_type_input != "AFFY" and file_type_input != "AFFY-PLUS":
         update_col_dict = {}
         for colname in samples_list:
             new_name = colname + ".1"

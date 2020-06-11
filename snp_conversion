@@ -188,7 +188,6 @@ conversion_group.add_argument(
     "LONG refers to the long-format Illumina file."
     "AFFY-PLUS refers to an Affymetrix-format file with PLUS alleles instead of the native Affymetrix (FWD) format",
 )
-## TODO: check if we can convert affy plus back to affy format
 conversion_group.add_argument(
     "--output-name",
     type=str,
@@ -270,9 +269,9 @@ merge_group.add_argument(
 merge_group.add_argument(
     "--input-format",
     type=str,
-    choices=["TOP", "FWD", "AB", "LONG", "DESIGN", "PLUS", "AFFY"],
+    choices=["TOP", "FWD", "AB", "LONG", "DESIGN", "PLUS", "AFFY", "AFFY-PLUS"],
     default="mixed",
-    help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'LONG', 'DESIGN', 'PLUS', or 'AFFY'. "
+    help="Type of file(s) expected: 'TOP', 'FWD', 'AB', 'LONG', 'DESIGN', 'PLUS', 'AFFY', or 'AFFY-PLUS. "
     "'mixed' may not be used when merging files.",
 )
 merge_group.add_argument(
@@ -300,13 +299,12 @@ concordance_group.add_argument(
     required=True,
     help="Name or path to the SNP panel file. Can be any Illumina or Affymetrix format",
 )
-## TODO: can genotype concordance handle affy plus?
 concordance_group.add_argument(
     "--panel-type",
     type=str,
     required=True,
-    choices=["TOP", "FWD", "AB", "PLUS", "DESIGN", "LONG", "AFFY"],
-    help="Type of panel file: 'TOP', 'FWD', 'AB', 'PLUS', 'DESIGN', 'LONG', 'AFFY'",
+    choices=["TOP", "FWD", "AB", "PLUS", "DESIGN", "LONG", "AFFY", "AFFY-PLUS"],
+    help="Type of panel file: 'TOP', 'FWD', 'AB', 'PLUS', 'DESIGN', 'LONG', 'AFFY', 'AFFY-PLUS'",
 )
 concordance_group.add_argument(
     "--vcf",
@@ -522,7 +520,6 @@ elif args.command == "check_format":
         args.species,
         args.plink,
     )
-## TODO: Check if we can merge affy plus
 elif args.command == "merge_files":
     if not args.input_format:
         kill_message = "The following argument is required: --input-format"
@@ -533,7 +530,7 @@ elif args.command == "merge_files":
             sys.exit(kill_message)
         else:
             pass
-        if args.input_format == "AFFY":
+        if args.input_format == "AFFY" or args.input_format == "AFFY-PLUS":
             output = merge.merge_affy_files(
                 input_dir, args.file_list, args.input_format, args.output
             )

@@ -311,7 +311,6 @@ def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfi
         pass
     vcf_out_unsorted = vcf_df_working.astype({"POS": "int"})
 
-    ## TODO: sort values in CHROM column
     vcf_out_sorted = sort_vcf(vcf_out_unsorted)
     if logfile:
         logfile = simple_log(log_array, filename, logfile)
