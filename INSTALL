@@ -4,9 +4,8 @@
 System Requirements
 ===================
 
-SNP Conversion and Genotype Concordance have been developed and tested with
-Python version 3.6.3. They are not compatible with Python2. Python 3 must be
-installed to use these programs.
+snp_conversion was developed and tested with Python version 3.6.3. It is not compatible with Python2. Python 3 must be
+installed to use this program.
 
 ============
 Installation
@@ -23,7 +22,7 @@ package installer for python](https://pypi.org/project/pip/).
 Download the program from Github or clone it into your directory. To download
 all dependencies, install the SNP Conversion wheel with
 
-`pip3 install dist/SNP_Conversion-2.0-py3-none-any.whl`
+`pip3 install dist/snp_conversion_ekherman-2.0-py3-none-any.whl `
 
 Use the `--user` flag for a local install.
 
