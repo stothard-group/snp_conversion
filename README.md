@@ -25,5 +25,6 @@ There are five main tools within snp_conversion:
 4. [genotype_concordance](https://github.com/stothard-group/snp_conversion/wiki/Genotype-Concordance)
 5. [vcf_generator](https://github.com/stothard-group/snp_conversion/wiki/VCF-Generator)
 
-See the [Quick Start Guide](https://github.com/stothard-group/snp_conversion/wiki/Quick-Start) to get started using the snp_conversion tools with a test dataset.
+See [Install page](https://github.com/stothard-group/snp_conversion/wiki/Installation) and [Quick Start Guide](https://github.com/stothard-group/snp_conversion/wiki/Quick-Start) to get started using the snp_conversion tools with a test dataset.
 
+Most snp_conversion tools rely on genotype conversion files to check input data formatting. See the [Genotype Conversion Files](https://github.com/stothard-group/snp_conversion/wiki/Genotype-Conversion-Files) section for information about generating these files.
