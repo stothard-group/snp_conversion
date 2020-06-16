@@ -5,7 +5,7 @@
 - DATE: APR 7, 2020
 - VERS: 2.0
 
-Please see the [snp_conversion wiki](https://github.com/stothard-group/snp_conversion/wiki)
+Please see the [snp_conversion wiki](https://github.com/stothard-group/snp_conversion/wiki) for more information about the program.
 
 ## General Description
 
