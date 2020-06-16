@@ -18,6 +18,26 @@ snp_conversion is a collection of tools for working with genotype data from Illu
 * Assess concordance of genotype data in the panel file with that of a user-specified VCF file
 * Generate a VCF file from a SNP panel file
 
+#### Usage information
+```
+usage: snp_conversion [-h] Tools ...
+
+A selection of tools for working with genotype data from Illumina and
+Affymetrix SNP panels To see the full usage for each Utility: ./snp_convserion
+[Utility] --help
+
+positional arguments:
+  Tools
+    check_format        Checks the format of the input file(s)
+    convert_file        Converts input file(s) to user-specified format
+    merge_files         Merges files of the same format
+    conversion_list     Lists all species and assembly names available
+    genotype_concordance
+                        Determines concordance between SNP panel genotypes and
+                        VCF file genotypes
+    vcf_generator       Converts SNP panel file to VCF format file
+```
+
 There are five main tools within snp_conversion:
 1. [check_format](https://github.com/stothard-group/snp_conversion/wiki/Format-Checking)
 2. [convert_file](https://github.com/stothard-group/snp_conversion/wiki/File-Conversion)
