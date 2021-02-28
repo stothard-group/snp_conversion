@@ -237,7 +237,7 @@ def check_input_snp_panel(
                 logfile_text = "Parsing " + file_type + " file"
                 log_array.append(logfile_text)
                 illumina_data_df.rename(
-                    columns={"Unnamed: 0": "SNP Name"}, inplace=True
+                    columns={"Unnamed: 0": "Name"}, inplace=True
                 )
                 if file_type != "PLUS":
                     converting_file = False
@@ -377,23 +377,25 @@ def check_input_snp_panel(
             pass
 
     # Quick test user SNP panel
-    is_mixed = True
-    fmt = "PLUS"
-    logfile_text = "Checking the panel file format relative to the variant file"
-    log_array.append(logfile_text)
-    format_check, format_log_out = TFDP_format_check(
-        panel_dataframe, var_df, fmt, file_name, is_mixed, logfile
-    )
-    if format_check != 0:
-        message = (
-            "Quick format check may have found inaccuracies: run check_format module"
-        )
-        log_array.append(message)
-        atexit.register(simple_log, log_array, file_name, format_log_out)
-        exit(message)
-    else:
-        logfile_text = "SNP panel file is correctly formatted"
-        log_array.append(logfile_text)
+    #is_mixed = True
+    #fmt = "PLUS"
+    #logfile_text = "Checking the panel file format relative to the variant file"
+    #log_array.append(logfile_text)
+    #format_check, format_log_out = TFDP_format_check(
+    #    panel_dataframe, var_df, fmt, file_name, is_mixed, logfile
+    #)
+    #if format_check != 0:
+    #    message = (
+    #        "Quick format check may have found inaccuracies: run check_format module"
+    #    )
+    #    log_array.append(message)
+    #    atexit.register(simple_log, log_array, file_name, format_log_out)
+    #    exit(message)
+    #else:
+    #    logfile_text = "SNP panel file is correctly formatted"
+    #    log_array.append(logfile_text)
+    format_check = 0
+    format_log_out = logfile
     if affy_flag is False:
         panel_dataframe_updated = update_snp_panel_names(panel_dataframe)
     else:

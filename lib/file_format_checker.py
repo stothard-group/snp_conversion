@@ -838,6 +838,7 @@ def check_long_format(long_df_dict, long_df, var_df, file, logfile):
         # Write inequivalencies to log file
         logfile = make_logs.long_inequivalency(file, logfile, inequiv_dict)
         # Warn inequivalencies
+        print(inequiv_dict)
         warning = "One or more genotypes are inequivalent within a row"
         warnings.warn(warning, stacklevel=4)
         log_array.append(warning)

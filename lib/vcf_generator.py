@@ -135,18 +135,15 @@ def sort_vcf(vcf_unsorted):
             else:
                 contigs = False
     # Now we have ints and strings
-    print(int_list)
     int_str_list = []
     for int_val in int_list:
         int_str_list.append(str(int_val))
     sub_int_df = vcf_unsorted[vcf_unsorted["#CHROM"].isin(int_str_list)].copy()
-    print(sub_int_df)
     sub_str_df = vcf_unsorted[vcf_unsorted["#CHROM"].isin(str_list)].copy()
     # Sort int dataframe on chrom and pos
     typed_sub_int_df = sub_int_df.astype(dtype={"#CHROM": int})
     sorted_int_df = typed_sub_int_df.sort_values(["#CHROM", "POS"], ascending=(True, True))
     ob_typed_sub_int_df = sorted_int_df.astype(dtype={"#CHROM": object})
-    print(ob_typed_sub_int_df)
     x_df = sub_str_df[sub_str_df["#CHROM"] == "X"]
     y_df = sub_str_df[sub_str_df["#CHROM"] == "Y"]
     mt_df = sub_str_df[sub_str_df["#CHROM"] == "MT"]
@@ -173,8 +170,6 @@ def sort_vcf(vcf_unsorted):
         sorted_vcf = pd.concat([sdf3, contigs_df])
     else:
         sorted_vcf = sdf3.copy()
-    print("this happens")
-    print(sorted_vcf)
     return sorted_vcf
 
 
@@ -269,7 +264,6 @@ def create_vcf_genotypes(ref_alt_df, position_dict, discard_snp, filename, logfi
             print(
                 "Something went wrong during genotype conversion. Printing problem values: "
             )
-            print(refalt_fail)
             exit()
         animal_name = animal.replace(".1", "")
         animal_refalt[animal_name] = animal_refalt["GT_NUM"].map(

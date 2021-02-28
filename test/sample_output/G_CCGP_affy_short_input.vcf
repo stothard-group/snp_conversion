@@ -1,17 +1,12 @@
 ##fileformat=VCFv4.2
-##filedate=20200528
+##filedate=20210228
 ##source=vcf_generator.py
 ##reference=ARS-UCD1_2_Btau5_0_1Y
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 ##vcf_generator_commandline.vcf_generator=<.snp_conversion vcf_generator --snp-panel input_files/concordance/G_CCGP_affy_short_input.txt --species bos_taurus --assembly ARS-UCD1_2_Btau5_0_1Y --panel-type AFFY>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Sample1	Sample2	Sample11	Sample12	Sample7	Sample13	Sample14	Sample15	Sample5	Sample3
 1	655346	AX-18000040	A	C	.	.	.	GT	1/1	1/1	1/1	1/1	0/1	1/1	1/1	0/1	1/1	0/1
-16	521534	AX-18000080	T	G	.	.	.	GT	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0
-16	528274	AX-18000102	A	G	.	.	.	GT	1/1	1/1	1/1	1/1	1/1	1/1	1/1	1/1	1/1	1/1
-16	530033	AX-18000110	A	G	.	.	.	GT	0/1	1/1	1/1	1/1	0/1	1/1	0/1	1/1	1/1	0/1
 1	724752	AX-18000257	C	T	.	.	.	GT	0/0	0/0	0/0	0/0	0/1	0/0	0/0	0/1	0/0	0/1
-24	104218	AX-18000286	G	A	.	.	.	GT	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0
-24	292694	AX-18000326	C	T	.	.	.	GT	0/1	1/1	1/1	1/1	0/0	1/1	0/1	0/1	1/1	0/0
 1	765285	AX-18000388	C	T	.	.	.	GT	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0
 1	769018	AX-18000406	T	G	.	.	.	GT	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0
 1	774431	AX-18000420	T	C	.	.	.	GT	0/1	0/0	0/0	0/0	0/1	0/0	0/1	0/0	0/0	0/0
@@ -54,3 +49,8 @@
 1	968136	AX-18001256	C	T	.	.	.	GT	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0
 1	973200	AX-18001280	T	C	.	.	.	GT	0/0	0/0	0/0	0/1	0/1	0/1	0/0	0/0	0/0	1/1
 1	977686	AX-18001302	A	G	.	.	.	GT	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/1
+16	521534	AX-18000080	T	G	.	.	.	GT	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0
+16	528274	AX-18000102	A	G	.	.	.	GT	1/1	1/1	1/1	1/1	1/1	1/1	1/1	1/1	1/1	1/1
+16	530033	AX-18000110	A	G	.	.	.	GT	0/1	1/1	1/1	1/1	0/1	1/1	0/1	1/1	1/1	0/1
+24	104218	AX-18000286	G	A	.	.	.	GT	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0
+24	292694	AX-18000326	C	T	.	.	.	GT	0/1	1/1	1/1	1/1	0/0	1/1	0/1	0/1	1/1	0/0

@@ -378,8 +378,8 @@ def get_df_colnames(in_type, out_type2):
         input_a = "DESIGN_A"
         input_b = "DESIGN_B"
     elif in_type == "AB":
-        input_a = "NA"
-        input_b = "NA"
+        input_a = "AB_A"
+        input_b = "AB_B"
     elif in_type == "PLUS":
         input_a = "PLUS_A"
         input_b = "PLUS_B"
@@ -399,8 +399,8 @@ def get_df_colnames(in_type, out_type2):
         output_a = "DESIGN_A"
         output_b = "DESIGN_B"
     elif out_type2 == "AB":
-        output_a = "NA"
-        output_b = "NA"
+        output_a = "AB_A"
+        output_b = "AB_B"
     elif out_type2 == "LONG":
         output_a = "NA"
         output_b = "NA"
@@ -420,96 +420,131 @@ def conversion(dataframe, var_dataframe, in_t, out_t):
     :return: list containing [snp name, sample, output allele 1, output allele 2] for each row in the input df
     """
     input_a, input_b, output_a, output_b = get_df_colnames(in_t, out_t)
-    first_col = ["."]
-    second_col = ["."]
-    tuples = [tup for tup in dataframe.set_index("SNP Name").itertuples()]
-    out_first_second = []
-    sample = dataframe.columns[1]
-    for tup in tuples:
-        name = tup[0]
-        cA = tup[2]
-        cB = tup[3]
+    out_sample1, out_sample2 = gen_long_output_col_names(out_t)
+#    print(dataframe)
+#    print(input_a, output_a)
+    if input_a == output_a:
+        # self matrix and we're making a LONG
+        # SNP Name   Sample  output_a    output_b
+        var_df_small = var_dataframe[['Name', input_a, input_b, 'VCF_A', 'VCF_B']].copy()
+        merge_test = pd.merge(dataframe, var_df_small, how="left", left_on=["SNP Name", input_a, input_b], right_on=["Name", input_a, input_b])
+        # access specific values to reverse
+        sub_merge = merge_test[merge_test[input_a] != merge_test[input_b]]
+        names = sub_merge["SNP Name"].to_list()
+        var_df_het = var_dataframe[var_dataframe['Name'].isin(names)]
+        torev = var_df_het.loc[var_df_het['VCF_A'] == 'ALT', 'Name']
+        torlist = torev.tolist()
+        #merge_test['out'] = np.where(merge_test['SNP Name'].isin(torlist), merge_test[input_b] + merge_test[input_a], merge_test[input_a] + merge_test[input_b])
+        merge_test['out'] = merge_test[input_a] + merge_test[input_b]
+        merge_test.drop(labels=[input_a, input_b, 'Name', "VCF_A", "VCF_B"], axis=1, inplace=True)
+        merge_test[out_sample1], merge_test[out_sample2] = zip(*merge_test['out'].apply(lambda y: list(y)))
+        col2 = dataframe.columns[1]
+        ab_concat_small = merge_test.rename(columns=({col2: "Sample ID"}))
+        ab_concat_small["Sample ID"] = col2
 
-        if in_t == "AB" or out_t == "AB":
-            # do stuff here to deal with AB
-            if in_t == "AB":
-                small_df_out_a = var_dataframe.loc[
-                    var_dataframe["Name"] == name, [output_a]
-                ]
-                small_df_out_b = var_dataframe.loc[
-                    var_dataframe["Name"] == name, [output_b]
-                ]
-                if cA != "-" and cB != "-":
-                    first_col = small_df_out_a.values[0]
-                    second_col = small_df_out_b.values[0]
-                else:
-                    first_col = "-"
-                    second_col = "-"
-            elif out_t == "AB":
-                small_df_in_a = var_dataframe.loc[
-                    var_dataframe["Name"] == name, [input_a]
-                ]
-                small_df_in_b = var_dataframe.loc[
-                    var_dataframe["Name"] == name, [input_b]
-                ]
-                if cA == cB:
-                    # figure out which is A or B
-                    if cA == small_df_in_a.values and cB == small_df_in_a.values:
-                        first_col = "A"
-                        second_col = "A"
-                    elif cA == small_df_in_b.values and cB == small_df_in_b.values:
-                        first_col = "B"
-                        second_col = "B"
-                    elif cA == "-" or cB == "-":
-                        first_col = "-"
-                        second_col = "-"
-                else:
-                    first_col = "A"
-                    second_col = "B"
-
+    else:
+        # Get rid of '-' first
+        initial_missing = dataframe[(dataframe[input_a] == '-') & (dataframe[input_b] == '-')].copy()
+        if initial_missing.empty:
+            df2 = dataframe.copy()
         else:
-            small_df_in_a = var_dataframe.loc[var_dataframe["Name"] == name, input_a]
-            small_df_in_b = var_dataframe.loc[var_dataframe["Name"] == name, input_b]
-            small_df_out_a = var_dataframe.loc[var_dataframe["Name"] == name, output_a]
-            small_df_out_b = var_dataframe.loc[var_dataframe["Name"] == name, output_b]
-            if small_df_in_a.empty and small_df_in_b.empty:
-                in_a = "-"
-                in_b = "-"
-            else:
-                in_a = small_df_in_a.values[0]
-                in_b = small_df_in_b.values[0]
-            if small_df_out_a.empty and small_df_out_b.empty:
-                out_a = "-"
-                out_b = "-"
-            else:
-                out_a = small_df_out_a.values[0]
-                out_b = small_df_out_b.values[0]
-            if cA != "-" or cB != "-":
-                if cA == in_a or cA == in_b:
-                    if cA == in_a:
-                        first_col = out_a
-                    elif cA == in_b:
-                        first_col = out_b
+            missing_list = initial_missing['SNP Name'].to_list()
+            for val in missing_list:
+                if val in dataframe['SNP Name'].to_list():
+                    dataframe.drop(dataframe.loc[dataframe['SNP Name'] == val].index, inplace=True)
                 else:
-                    first_col = "-"
-                if cB == in_a or cB == in_b:
-                    if cB == in_b:
-                        second_col = out_b
-                    elif cB == in_a:
-                        second_col = out_a
+                    pass
+            df2 = dataframe.copy()
+        #print("df2")
+        #print(df2[df2["SNP Name"] == "ARS-BFGL-BAC-10245"])
+        var_df_small = var_dataframe[['Name', input_a, input_b, output_a, output_b, 'VCF_A', 'VCF_B']].copy()
+        merge1 = pd.merge(df2, var_df_small, how="left", left_on=["SNP Name", input_a], right_on=["Name", input_a])
+        input_b_y = input_b + "_y"
+        input_b_x = input_b + "_x"
+        input_a_x = input_a + "_x"
+        input_a_y = input_a + "_y"
+        # deal with missing data before splitting
+        missing_df = merge1[(merge1[input_a] == '-') | (merge1[output_a] == '.')].copy()
+        if missing_df.empty:
+            merge_1_r = merge1.copy()
+        else:
+            missing_list = missing_df['SNP Name'].to_list()
+            for val in missing_list:
+                if val in merge1.Name.to_list():
+                    merge1.drop(merge1.loc[merge1['SNP Name'] == val].index, inplace=True)
                 else:
-                    second_col = "-"
+                    pass
+            merge_1_r = merge1.copy()
+        bb_only = merge_1_r[merge_1_r["Name"].isnull()].copy()  # these are rows with BB, where the initial merge didn't happen
+        aab_only = merge_1_r[~merge_1_r["Name"].isnull()].copy()
+        # drop and rename aab columns
+        aab_only.drop(labels=['Name', input_b_y], axis=1, inplace=True)
+        aab_only.rename(columns=({input_b_x: input_b}), inplace=True)
+        sub_merge2 = aab_only[aab_only[input_a] != aab_only[input_b]]
+        names = sub_merge2["SNP Name"].to_list()
+        var_df_het = var_dataframe[var_dataframe['Name'].isin(names)]
+        torev = var_df_het.loc[var_df_het['VCF_A'] == 'ALT', 'Name']
+        torlist = torev.tolist()
+        aab_only['out'] = np.where(aab_only[input_a] == aab_only[input_b], aab_only[output_a] + aab_only[output_a], aab_only[output_a] + aab_only[output_b])
 
-            else:
-                first_col = "-"
-                second_col = "-"
-        if first_col == "." and second_col == ".":
-            first_col = "-"
-            second_col = "-"
-        out_first_second.append(
-            [name, sample, first_col, second_col]
-        )  # Get the program to just print out the found values
-    return out_first_second
+       # aab_only['out'] = np.where(aab_only[input_a] == aab_only[input_b], aab_only[output_a] + aab_only[output_a], np.where(aab_only['VCF_A'] == 'REF', aab_only[output_a] + aab_only[output_b], aab_only[output_b] + aab_only[output_a]))
+        # drop and rename bb colummns
+        bb_only.drop(labels=['Name', input_b_y, output_a, output_b, "VCF_A", "VCF_B"], axis=1, inplace=True)
+        bb_only.rename(columns=({input_b_x: input_b}), inplace=True)
+        # merge bb only with variant on B values
+        bbmerge = pd.merge(bb_only, var_df_small, how="left", left_on=["SNP Name", input_b], right_on=["Name", input_b])
+        # reverse alleles if necessary
+        toreverse = bbmerge[bbmerge[output_b].isna()].copy()
+        toreverse['new_in_B'] = toreverse[input_a_x]
+        toreverse[input_a] = toreverse[input_b]
+        toreverse.drop(labels=[input_b], axis=1, inplace=True)
+        toreverse.rename(columns=({'new_in_B': input_b}), inplace=True)
+        toreverse.drop(labels=[output_a, output_b, 'Name', "VCF_A", "VCF_B", input_a_y, input_a_x], axis=1, inplace=True)
+        tor_merge = pd.merge(toreverse,var_df_small, how="left", left_on=["SNP Name", input_b], right_on=["Name", input_b])
+        # drop labels that are in reverse df from bbmerge and concatenate tor_merge
+        reversed_list = tor_merge['Name'].to_list()
+        for val in reversed_list:
+            bbmerge.drop(bbmerge.loc[bbmerge['SNP Name'] == val].index, inplace=True)
+        concat_list = [bbmerge, tor_merge]
+        bbmerge_tor = pd.concat(concat_list, axis=0, join='outer', ignore_index=True)
+
+        missing_df_bb = bbmerge_tor[(bbmerge_tor[input_b] == '-')| (bbmerge_tor[output_b] == '.')].copy()
+        if missing_df_bb.empty:
+            bb_merge_r = bbmerge_tor.copy()
+        else:
+            missing_list_bb = missing_df_bb['SNP Name'].to_list()
+            for val in missing_list_bb:
+                if val in bbmerge_tor['SNP Name'].to_list():
+                    bbmerge_tor.drop(bbmerge_tor.loc[bbmerge_tor['SNP Name'] == val].index, inplace=True)
+                else:
+                    pass
+            bb_merge_r = bbmerge_tor.copy()
+        bb_merge_r.drop(labels=['Name', input_a_y], axis=1, inplace=True)
+        bb_merge_r.rename(columns=({input_a_x: input_a}), inplace=True)
+        bb_merge_r['out'] = np.where(bb_merge_r[input_a] == bb_merge_r[input_b], bb_merge_r[output_b] + bb_merge_r[output_b], bb_merge_r[output_a] + bb_merge_r[output_b])
+
+        # concatenate aa+ab and bb dataframes, put back missing_df
+        if not initial_missing.empty:
+            initial_missing['out'] = '--'
+            frames = [aab_only, bb_merge_r, initial_missing]
+        else:
+            frames = [aab_only, bb_merge_r, initial_missing]
+        ab_concat = pd.concat(frames, axis=0, join='outer', ignore_index=True)
+        ab_concat_small = ab_concat[['SNP Name', ab_concat.columns[1], 'out']].copy()
+        ab_concat_small.fillna('--', inplace=True)
+        # Fix any BA values in AB dataframe
+        if out_t == "AB":
+            ab_concat_small['out_rev'] = np.where(ab_concat_small['out'] == 'BA', 'AB', ab_concat_small['out'])
+            ab_concat_small.drop(labels=['out'], axis=1, inplace=True)
+            ab_concat_small.rename(columns={'out_rev': 'out'}, inplace=True)
+        #print(ab_concat_small)
+        #SNP Name   Sample  output_a    output_b
+        ab_concat_small[out_sample1], ab_concat_small[out_sample2] = zip(*ab_concat_small['out'].apply(lambda y: list(y)))
+        col2 = ab_concat_small.columns[1]
+        ab_concat_small.rename(columns=({col2: "Sample ID"}), inplace=True)
+        ab_concat_small['Sample ID'] = col2
+        ab_concat_small.drop(labels=['out'], axis=1, inplace=True)
+    return ab_concat_small
 
 
 def list_to_concat_df(output_type, results_list):
@@ -589,13 +624,13 @@ def split_and_convert(
         vals = [output_type]
         message = "Converting to " + output_type + " file"
         log_array.append(message)
-    for out_type in vals:
+    for ot in vals:
         results = []
         results_list = []
         if can_we_thread is True:
             with cf.ProcessPoolExecutor(max_workers=n_threads) as executor:
                 allele = {
-                    executor.submit(conversion, df, var_df, matrix_type, out_type): df
+                    executor.submit(conversion, df, var_df, matrix_type, ot): df
                     for df in split_df_list
                 }
                 results.append(allele)
@@ -604,12 +639,14 @@ def split_and_convert(
                     results_list.append(data)
         else:
             for df in split_df_list:
-                data = conversion(df, var_df, matrix_type, out_type)
+                data = conversion(df, var_df, matrix_type, ot)
                 results_list.append(data)
-        output_results = list_to_concat_df(out_type, results_list)
+        output_results = list_to_concat_df(ot, results_list)
+        resname = ot + "_output.txt"
         output_results = output_results.sort_values(by=["Sample ID", "SNP Name"])
-        results_dict.update({out_type: output_results})
+        results_dict.update({ot: output_results})
         results_array.append(output_results)
+
     timestr = time.strftime("%H:%M:%S")
     message = timestr + " ..... Conversion complete"
     log_array.append(message)
@@ -686,9 +723,13 @@ def reorder_converted_df(
         pos1 = new_output_df.columns.values[2]
         pos2 = new_output_df.columns.values[3]
 
-        new_output_df["output"] = new_output_df[[pos1, pos2]].apply(
-            lambda x: "".join(x), axis=1
-        )
+
+        #new_output_df["output"] = new_output_df[[pos1, pos2]].apply(
+        #    lambda x: "".join(map(str,x)), axis=1
+        #)
+        new_output_df["output_min"] = new_output_df[pos1] + new_output_df[pos2]
+        new_output_df["output"] = new_output_df["output_min"].apply(''.join)
+        new_output_df.drop(columns="output_min", inplace=True)
         col1 = new_output_df.columns[2]
         col2 = new_output_df.columns[3]
         df_list = []

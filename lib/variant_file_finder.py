@@ -77,17 +77,19 @@ def get_var_df(var_dir, var_file_list, assembly, species, reg_alt_bool_dict):
                 "PLUS_y": "PLUS_B",
                 "FORWARD_x": "FORWARD_A",
                 "FORWARD_y": "FORWARD_B",
+                "VCF_x": "VCF_A",
+                "VCF_y": "VCF_B",
+                "AB_x": "AB_A",
+                "AB_y": "AB_B"
             },
             inplace=True,
         )
-        if alt_bool is True:
+        if alt_bool is False:
             merged_df_A_B_dropped = merged_df_A_B.drop(
-                columns=["AB_x", "AB_y", "VCF_x", "VCF_y"]
+                columns=["alt_marker_name"]
             )
         else:
-            merged_df_A_B_dropped = merged_df_A_B.drop(
-                columns=["alt_marker_name", "AB_x", "AB_y", "VCF_x", "VCF_y"]
-            )
+            merged_df_A_B_dropped = merged_df_A_B.copy()
         merged_df_A_B_dropped["SNP"] = ""
         merged_df_A_B_dropped["BLAST_strand"] = ""
         merged_df_A_B_dropped["Reference_allele_forward_strand"] = ""
@@ -130,6 +132,11 @@ def get_var_df(var_dir, var_file_list, assembly, species, reg_alt_bool_dict):
                 "PLUS_B",
                 "TOP_A",
                 "TOP_B",
+                "VCF_A",
+                "VCF_B",
+                "AB_A",
+                "AB_B"
+
             ]
         ]
         merged_positional.fillna(".", inplace=True)
@@ -156,6 +163,10 @@ def get_var_df(var_dir, var_file_list, assembly, species, reg_alt_bool_dict):
                 "PLUS_B",
                 "TOP_A",
                 "TOP_B",
+                "VCF_A",
+                "VCF_B",
+                "AB_A",
+                "AB_B"
             ],
             how="outer",
         ),
@@ -285,7 +296,7 @@ def check_for_incongruous_matches(matches_list, complete_var_dict, converted_snp
     )
     count_mask = unique_counts > 1
     marker_duplicates = unique[count_mask]
-    if marker_duplicates:
+    if len(marker_duplicates) > 0:
         marker_duplicates_list = "\n".join(marker_duplicates)
         message = (
             "One or more user input SNPs is found in multiple contributing conversion files with conflicting information. "
@@ -544,7 +555,7 @@ def var_match(
         input_names,
         complete_var_dict,
     )
-    if multi_matching_file_dict_list:
+    if multi_matching_file_dict_list[0]:
         for mmdict in multi_matching_file_dict_list:
             keys = list(mmdict.keys())
             if len(keys) == 1:

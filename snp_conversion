@@ -485,8 +485,8 @@ else:
 
 if args.command == "convert_file":
     correlation_check = species_assembly_error_check(args.conversion, args.assembly, args.species)
-    if args.input_format == "AB":
-        exit("Cannot convert AB format to another format")
+    #if args.input_format == "AB":
+    #    exit("Cannot convert AB format to another format")
     output = convert.convert_file(
         input_dir,
         args.file_list,

@@ -25,7 +25,7 @@ def check_user_platform():
     """
     user_platform = platform.system()
     if user_platform == "Linux" or user_platform == "Darwin":
-        threading = True
+        threading = False
     elif user_platform == "Windows":
         threading = False
     else:
@@ -42,7 +42,14 @@ def find_missing_samples(line, samples_strip):
     """
     line.rstrip("\n")
     line_split = line.split("\t")
-    vcf_samples = line_split[9:]
+    vcf_sam1 = line_split[9:]
+    vcf_samples = []
+    for l in vcf_sam1:
+        if l.endswith("\n"):
+            l2 = l.rstrip("\n")
+            vcf_samples.append(l2)
+        else:
+            vcf_samples.append(l)
     missing_samples = []
     kept_samples = []
     for sam in samples_strip:
@@ -233,6 +240,7 @@ def numeric_to_allele_conversion(geno_parsed_df):
     function
     :return: genotype dataframe with both alleles and numbers
     """
+    geno_parsed_df.to_csv("geno_parsed_df.txt", sep='\t')
     sample_list = (list(geno_parsed_df.columns))[7:]
     basenames = []
     for sample in sample_list:
@@ -256,6 +264,7 @@ def numeric_to_allele_conversion(geno_parsed_df):
             lambda row: convert_allele(row, each_base2), axis=1
         )
     geno_parsed_df_finished = geno_parsed_df.copy()
+    geno_parsed_df_finished.to_csv("geno_parsed_df_finished.txt", sep='\t')
     return geno_parsed_df_finished
 
 
@@ -686,6 +695,7 @@ def comparison(
     reverse_heterozygous_df = merged_panel_and_vcf_reverse[
         ~merged_panel_and_vcf_reverse["Name"].isin(homozygous_name_list)
     ].copy()
+
 
     # Pass back dataframes as values in a dict
     # correct_homozygous_df: AA = AA
@@ -1296,7 +1306,6 @@ def generate_animal_stats(
     disc_informational = discordant.loc[
         (discordant[snp_animal_name] != "--") & (discordant[vcf_animal_name] != "--")
     ]
-
     total_disc_informational = len(disc_informational.index)
     total_disc_noninformational = len(disc_noninformational.index)
 
@@ -1308,6 +1317,7 @@ def generate_animal_stats(
         + total_heterozygous_reverse
         + total_disc_informational
     )  # 0
+
 
     # Calculuate non-informational content
     # dashes + disc(AA/--) + disc(--/AA)
@@ -1512,12 +1522,12 @@ User-directed filtering was applied, which removed {} positions.
         "Total discordant",
         "Homozygous reference concordant",
         "Homozygous alternate concordant",
+        "Heterozygous concordant",
+        "Heterozygous concordant (true only)",
+        "Heterozygous concordant (gt reversed only)",
         "Discordant: panel hom. & vcf hom.",
         "Discordant: panel hom. & vcf het.",
         "Discordant: panel hom. & distinct from vcf",
-        "Heterozygous concordant (total)",
-        "Heterozygous concordant (true only)",
-        "Heterozygous concordant (gt reversed only)",
         "Discordant: panel het. & vcf hom.",
         "Discordant: panel het. & distinct from vcf",
     ]
@@ -1602,9 +1612,7 @@ def split_output_text(stats_df):
             "Discordant: panel hom. & vcf hom.",
             "Discordant: panel hom. & vcf het.",
             "Discordant: panel hom. & distinct from vcf",
-            "Heterozygous concordant (total)",
-            "Heterozygous concordant (true only)",
-            "Heterozygous concordant (gt reversed only)",
+            "Heterozygous concordant",
             "Discordant: panel het. & vcf hom.",
             "Discordant: panel het. & distinct from vcf",
         ],
@@ -1817,6 +1825,7 @@ def concordance_analysis(
         snp_file,
     )
 
+    converted_dataframe.to_csv("converted_dataframe_vcf.txt", sep='\t', index=False)
     # Compare the user SNP panel values to the VCF values on a per-animal basis
     compared_dict, logfile_out5 = compare_genotypes(
         converted_dataframe,
